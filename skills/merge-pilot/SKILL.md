@@ -37,7 +37,7 @@ Act as a world-class, professional software engineer with deep git best-practice
 All output — prose, commit messages, branch names, MR title/description — is in English, matching this repo's own derived convention where applicable, or $ARGUMENTS if it specifies otherwise.
 
 Emojis are only allowed in these exact spots, nowhere else:
-1. At the **start** of each top-level `#` heading: `# Branch` gets ✅ (OK) or ⚠️ (ISSUE), `# Commits` gets 📝, `# Merge Request` gets 🔀, `# Committer` gets 👤.
+1. At the **start** of each top-level `#` heading: `# Branch` gets ✅ (OK) or ⚠️ (ISSUE), `# New Commits` gets 📝, `# Merge Request` gets 🔀, `# Committer` gets 👤.
 2. In each commit heading's ordinal number, using the keycap-style number emoji (1️⃣, 2️⃣, 3️⃣, ... up to 🔟). Past 10, use a plain digit.
 3. At the start of each of the Merge Request section's `### New commits` / `### Existing commits` headings — same 📝 as the Commits heading.
 
@@ -57,7 +57,7 @@ Steps 1-7 are analysis only — nothing is rendered until Step 8, which renders 
   - **Abort and start fresh** — run `git rebase --abort` or `git merge --abort` (matching whichever is in progress), then continue immediately to Step 1 in the same turn — never stop, pause, or wait here.
   - **Leave it alone** — stop immediately, nothing runs.
 
-**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 Commits (0)`, no commit blocks), and omit the Merge Request section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, the entire `# 🔀 Merge Request` section is omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
+**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 New Commits (0)`, no commit blocks), and omit the Merge Request section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, the entire `# 🔀 Merge Request` section is omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
 
 ### Step 1 — Check whether HEAD is on a protected/mainline branch, or detached
 
@@ -199,7 +199,7 @@ then heading `### Suggested branch`, then its own fence:
 <branch-name>
 ```
 
-`---`, then heading `# 📝 Commits (<N>)`.
+`---`, then heading `# 📝 New Commits (<N>)`.
 
 If Step 2 excluded any files as likely secrets, add one plain line right after (omit entirely if none): `Excluded (possible secrets — review manually): <file1>, <file2>`
 
@@ -226,19 +226,19 @@ Heading `# 🔀 Merge Request`.
 
 Two separate lists, each with its own count and its own independent keycap-emoji numbering (both start at 1️⃣), each a **plain list — never fenced**. **Omit either list entirely if its count is 0**. **If both counts are 0** (nothing new to propose and nothing prior found), there's no actual merge request to describe — omit the entire `# 🔀 Merge Request` section instead, heading and all (Assumed target, Squash check, Title, Description included too) — a title/description for a non-existent PR isn't useful.
 
-Heading `### 📝 New commits (<N>)`, then plain list:
-1️⃣ <Title-1>
-2️⃣ <Title-2>
-
-&nbsp;
-
 Heading `### 📝 Existing commits (<M>)`, then plain list:
 1️⃣ <real commit subject line-1>
 2️⃣ <real commit subject line-2>
 
-**New commits** = this run's proposed commits (Steps 2-3), if any. `<N>` must match the commit count shown in `# 📝 Commits (<N>)` exactly, same counting-hygiene rule (count the list, don't estimate). Each line is the matching commit's **Title** (not the message subject, not the body). The label itself reflects what actually happened this run — one of two states: `New commits to be applied` (Step 9 not yet approved/declined) or `New commits applied` (Step 10 already applied them, re-renders with this).
+&nbsp;
 
-**Existing commits** = Step 5's surviving prior commits (already committed before this run, not yet on the target), if any — completely independent count from `<N>` above, no cross-check between the two. Since these commits weren't authored by this run, don't invent a Title for them — show each one's **real commit subject line** (first line of its actual message) as-is.
+Heading `### 📝 New commits (<N>)`, then plain list:
+1️⃣ <Title-1>
+2️⃣ <Title-2>
+
+**Existing commits** = Step 5's surviving prior commits (already committed before this run, not yet on the target), if any — completely independent count from `<N>` below, no cross-check between the two. Since these commits weren't authored by this run, don't invent a Title for them — show each one's **real commit subject line** (first line of its actual message) as-is.
+
+**New commits** = this run's proposed commits (Steps 2-3), if any. `<N>` must match the commit count shown in `# 📝 New Commits (<N>)` exactly, same counting-hygiene rule (count the list, don't estimate). Each line is the matching commit's **Title** (not the message subject, not the body). The label itself reflects what actually happened this run — one of two states: `New commits to be applied` (Step 9 not yet approved/declined) or `New commits applied` (Step 10 already applied them, re-renders with this).
 
 &nbsp;
 
@@ -307,9 +307,9 @@ Copy directly from context — don't alter or guess.
 
   &nbsp;
 
-  Both lists — heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ...; heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
+  Both lists — heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ...; heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
 
-  Change the **New commits** label to `New commits applied (<N>)` instead of `New commits to be applied (<N>)` — confirms exactly what happened. The **Existing commits** list, if shown, is unaffected by this change.
+  The **Existing commits** list, if shown, is unaffected by this re-render. Change the **New commits** label to `New commits applied (<N>)` instead of `New commits to be applied (<N>)` — confirms exactly what happened.
 
   &nbsp;
 
@@ -446,7 +446,7 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
 
   &nbsp;
 
-  Both lists — heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ...; heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
+  Both lists — heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ...; heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
 
   Same content and labels as whichever version — `New commits to be applied`, `New commits applied`, or omitted — was last shown; don't relabel it here.
 
