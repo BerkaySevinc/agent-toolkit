@@ -1,11 +1,11 @@
 ---
-description: Analyzes uncommitted changes and proposes how to split/organize them into commits with best-practice messages, determines the correct merge target, and writes the MR/PR title/description. Reports the plan first — creates the commits (and branch, if needed) only after explicit approval, then separately offers to sync the branch with its target (fast-forward, rebase, or merge), resolving conflicts and any detected semantic risks along the way, each gated behind its own approval. Never pushes, ever.
+description: Analyzes uncommitted changes and proposes how to split/organize them into commits with best-practice messages, determines the correct merge target, and writes the MR/PR title/description. Reports the plan first — creates the commits (and branch, if needed) only after explicit approval, then separately offers to sync the branch with its target (fast-forward, rebase, or merge), resolving conflicts and any detected semantic risks along the way, each gated behind its own approval. Only at the very end, once everything else is settled, does it offer to push — and only after its own explicit approval there; force-push is never used, under any circumstance. If the push succeeds and already-existing access to GitHub, GitLab, or Azure DevOps is detected, it then separately offers to open the PR/MR too, using only pre-existing access — never requesting or storing new credentials.
 argument-hint: [optional: focus area, e.g. "only look at src/"]
 disable-model-invocation: true
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git ls-files:*), Bash(git ls-remote:*), Bash(git merge-base:*), Bash(git rev-list:*), Bash(git cherry:*), Bash(git config:*), Bash(git for-each-ref:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git apply:*), Bash(git fetch:*), Bash(git rebase:*), Bash(git merge:*), Bash(git reset:*), Bash(git rm --cached:*), Bash(git merge-tree:*), Bash(git worktree:*), Bash(npm install --package-lock-only --ignore-scripts:*), Bash(pnpm install --lockfile-only:*), Bash(yarn install --ignore-scripts:*), Bash(bundle lock:*), Bash(poetry lock:*), Read, Edit, AskUserQuestion
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git ls-files:*), Bash(git ls-remote:*), Bash(git remote:*), Bash(git merge-base:*), Bash(git rev-list:*), Bash(git cherry:*), Bash(git config:*), Bash(git for-each-ref:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git apply:*), Bash(git fetch:*), Bash(git rebase:*), Bash(git merge:*), Bash(git reset:*), Bash(git rm --cached:*), Bash(git merge-tree:*), Bash(git worktree:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh pr create:*), Bash(glab auth status:*), Bash(glab mr create:*), Bash(az account show:*), Bash(az repos pr create:*), Bash(npm install --package-lock-only --ignore-scripts:*), Bash(pnpm install --lockfile-only:*), Bash(yarn install --ignore-scripts:*), Bash(bundle lock:*), Bash(poetry lock:*), Read, Edit, AskUserQuestion
 ---
 
-**Critical constraint:** Steps 1-8 (the analysis and report) are always read-only — never run `git add`, `git commit`, `git checkout`, `git apply`, `git rebase`, `git merge`, `git reset`, `git rm`, a lockfile regenerate command, or any other state-changing command during them. `git merge-tree` and `git worktree add`/`remove` (Step 12's conflict/rebase preview) never touch your real branch or working tree, so they run freely during the preview, before approval — including a lockfile regenerate command run inside that temporary worktree, purely to see its result. Everything that changes your **real** branch — `git add`/`git commit`/`git checkout`/`git apply`/`git reset`/`git rm --cached`/`git rebase`/`git merge` (and their `--continue`/`--abort` forms), and a lockfile regenerate command run for real — is only permitted in Step 10 (after Step 9's approval) or Step 12's real-execution section (after Step 12's own combined-plan approval); approving one step never implies approval for another; Steps 9, 11, and 12 are each independently gated. `Edit` is only permitted in Step 12, and only *after* its own `AskUserQuestion` is approved — never write a proposed resolution or fix to disk (real or previewed) before it's shown and approved. `git push` is never run, under any circumstance, approved or not. **`git reset` is only ever run bare (no flags)** — `--hard`/`--mixed`/`--soft` are never used; a bare `git reset` only unstages, it never touches the working tree, which is the only variant that's ever safe here. **`git rm` is only ever run with `--cached`** — never bare, which would also delete the file from the working tree; `--cached` only removes it from the index (used for the case-only-rename handling in Step 10).
+**Critical constraint:** Steps 1-8 (the analysis and report) are always read-only — never run `git add`, `git commit`, `git checkout`, `git apply`, `git rebase`, `git merge`, `git reset`, `git rm`, `git push`, `gh pr create`, `glab mr create`, `az repos pr create`, a lockfile regenerate command, or any other state-changing command during them. `git merge-tree` and `git worktree add`/`remove` (Step 12's conflict/rebase preview) never touch your real branch or working tree, so they run freely during the preview, before approval — including a lockfile regenerate command run inside that temporary worktree, purely to see its result. Everything that changes your **real** branch — `git add`/`git commit`/`git checkout`/`git apply`/`git reset`/`git rm --cached`/`git rebase`/`git merge` (and their `--continue`/`--abort` forms), and a lockfile regenerate command run for real — is only permitted in Step 10 (after Step 9's approval) or Step 12's real-execution section (after Step 12's own combined-plan approval); approving one step never implies approval for another; Steps 9, 11, 12, 14, and 15 are each independently gated. `Edit` is only permitted in Step 12, and only *after* its own `AskUserQuestion` is approved — never write a proposed resolution or fix to disk (real or previewed) before it's shown and approved. `git push` is only ever run in Step 14 — reached only once everything else is settled — and only after its own explicit approval there; `gh pr create`/`glab mr create`/`az repos pr create` is only ever run in Step 15, only after Step 14 actually pushed and only after Step 15's own separate approval; approval anywhere earlier (Step 9, 11, 12, or 14) never implies approval for the next gate. Even in Step 14, only a plain `git push` (setting upstream with `-u` if none exists yet) is ever used — `--force`/`--force-with-lease` is never used, under any circumstance, and only the current branch is ever pushed, never the target branch directly. Step 15 only ever uses **already-existing** authentication (a logged-in `gh`/`glab`/`az` CLI, including one backed by an environment token, for GitHub, GitLab, or Azure DevOps only — no other host is ever supported) to open the PR/MR — it never requests, obtains, prompts for, or stores any credential, token, or API key itself. **`git reset` is only ever run bare (no flags)** — `--hard`/`--mixed`/`--soft` are never used; a bare `git reset` only unstages, it never touches the working tree, which is the only variant that's ever safe here. **`git rm` is only ever run with `--cached`** — never bare, which would also delete the file from the working tree; `--cached` only removes it from the index (used for the case-only-rename handling in Step 10).
 
 **Important:** Every Bash call is exactly one command — nothing else in it, ever. Never combine anything with `&&`, `;`, a shell loop (`for`/`while`), a pipe (`|`), or command substitution (`$(...)`) — this includes `cd` (or any other non-git command) chained in front of a git command. This applies even when a step involves many similar commands (e.g. Step 4 checking each candidate branch); one Bash call per command, always, no batching or chaining for convenience. If the working directory needs to change, run `cd` once as its own separate call first — the working directory persists across calls, so every command after that runs there directly, with no `cd` repeated or chained into any of them.
 
@@ -37,7 +37,7 @@ Act as a world-class, professional software engineer with deep git best-practice
 All output — prose, commit messages, branch names, MR title/description — is in English, matching this repo's own derived convention where applicable, or $ARGUMENTS if it specifies otherwise.
 
 Emojis are only allowed in these exact spots, nowhere else:
-1. At the **start** of each top-level `#` heading: `# Branch` gets ✅ (OK) or ⚠️ (ISSUE), `# Commits` gets 📝, `# Merge Request` gets 🔀, `# Committer` gets 👤.
+1. At the **start** of each top-level `#` heading: `# Branch` gets ✅ (OK) or ⚠️ (ISSUE), `# New Commits` gets 📝, `# Merge Request` gets 🔀, `# Committer` gets 👤.
 2. In each commit heading's ordinal number, using the keycap-style number emoji (1️⃣, 2️⃣, 3️⃣, ... up to 🔟). Past 10, use a plain digit.
 3. At the start of each of the Merge Request section's `### New commits` / `### Existing commits` headings — same 📝 as the Commits heading.
 
@@ -57,7 +57,7 @@ Steps 1-7 are analysis only — nothing is rendered until Step 8, which renders 
   - **Abort and start fresh** — run `git rebase --abort` or `git merge --abort` (matching whichever is in progress), then continue immediately to Step 1 in the same turn — never stop, pause, or wait here.
   - **Leave it alone** — stop immediately, nothing runs.
 
-**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 Commits (0)`, no commit blocks), and omit the Merge Request section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, the entire `# 🔀 Merge Request` section is omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
+**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 New Commits (0)`, no commit blocks), and omit the Merge Request section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, the entire `# 🔀 Merge Request` section is omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
 
 ### Step 1 — Check whether HEAD is on a protected/mainline branch, or detached
 
@@ -199,7 +199,7 @@ then heading `### Suggested branch`, then its own fence:
 <branch-name>
 ```
 
-`---`, then heading `# 📝 Commits (<N>)`.
+`---`, then heading `# 📝 New Commits (<N>)`.
 
 If Step 2 excluded any files as likely secrets, add one plain line right after (omit entirely if none): `Excluded (possible secrets — review manually): <file1>, <file2>`
 
@@ -226,19 +226,19 @@ Heading `# 🔀 Merge Request`.
 
 Two separate lists, each with its own count and its own independent keycap-emoji numbering (both start at 1️⃣), each a **plain list — never fenced**. **Omit either list entirely if its count is 0**. **If both counts are 0** (nothing new to propose and nothing prior found), there's no actual merge request to describe — omit the entire `# 🔀 Merge Request` section instead, heading and all (Assumed target, Squash check, Title, Description included too) — a title/description for a non-existent PR isn't useful.
 
-Heading `### 📝 New commits (<N>)`, then plain list:
-1️⃣ <Title-1>
-2️⃣ <Title-2>
-
-&nbsp;
-
 Heading `### 📝 Existing commits (<M>)`, then plain list:
 1️⃣ <real commit subject line-1>
 2️⃣ <real commit subject line-2>
 
-**New commits** = this run's proposed commits (Steps 2-3), if any. `<N>` must match the commit count shown in `# 📝 Commits (<N>)` exactly, same counting-hygiene rule (count the list, don't estimate). Each line is the matching commit's **Title** (not the message subject, not the body). The label itself reflects what actually happened this run — one of two states: `New commits to be applied` (Step 9 not yet approved/declined) or `New commits applied` (Step 10 already applied them, re-renders with this).
+&nbsp;
 
-**Existing commits** = Step 5's surviving prior commits (already committed before this run, not yet on the target), if any — completely independent count from `<N>` above, no cross-check between the two. Since these commits weren't authored by this run, don't invent a Title for them — show each one's **real commit subject line** (first line of its actual message) as-is.
+Heading `### 📝 New commits (<N>)`, then plain list:
+1️⃣ <Title-1>
+2️⃣ <Title-2>
+
+**Existing commits** = Step 5's surviving prior commits (already committed before this run, not yet on the target), if any — completely independent count from `<N>` below, no cross-check between the two. Since these commits weren't authored by this run, don't invent a Title for them — show each one's **real commit subject line** (first line of its actual message) as-is.
+
+**New commits** = this run's proposed commits (Steps 2-3), if any. `<N>` must match the commit count shown in `# 📝 New Commits (<N>)` exactly, same counting-hygiene rule (count the list, don't estimate). Each line is the matching commit's **Title** (not the message subject, not the body). The label itself reflects what actually happened this run — one of two states: `New commits to be applied` (Step 9 not yet approved/declined) or `New commits applied` (Step 10 already applied them, re-renders with this).
 
 &nbsp;
 
@@ -307,9 +307,9 @@ Copy directly from context — don't alter or guess.
 
   &nbsp;
 
-  Both lists — heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ...; heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
+  Both lists — heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ...; heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
 
-  Change the **New commits** label to `New commits applied (<N>)` instead of `New commits to be applied (<N>)` — confirms exactly what happened. The **Existing commits** list, if shown, is unaffected by this change.
+  The **Existing commits** list, if shown, is unaffected by this re-render. Change the **New commits** label to `New commits applied (<N>)` instead of `New commits to be applied (<N>)` — confirms exactly what happened.
 
   &nbsp;
 
@@ -339,7 +339,7 @@ Copy directly from context — don't alter or guess.
 
   Title and Description are unchanged from Step 8's render unless something here (e.g. a manual-staging fallback) actually changes what's being proposed.
 
-  Follow the re-rendered section with each commit's short hash, the branch (if created), any file that needed manual staging, and any unexpected leftover files found above. Still never push.
+  Follow the re-rendered section with each commit's short hash, the branch (if created), any file that needed manual staging, and any unexpected leftover files found above. Pushing is never offered here — that only happens at the very end, in Step 14, once everything else is settled.
 - **Rendering this does not end the step — immediately continue to Step 11 in the same turn; never stop, pause, or wait after rendering.**
 
 ### Step 11 — Offer to sync with the target
@@ -446,7 +446,7 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
 
   &nbsp;
 
-  Both lists — heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ...; heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
+  Both lists — heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ...; heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
 
   Same content and labels as whichever version — `New commits to be applied`, `New commits applied`, or omitted — was last shown; don't relabel it here.
 
@@ -480,9 +480,44 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
   - **Merge path, fixed**: `Semantic risk fixed: <N> instance(s), included in the merge commit.`
   - **Rebase path, fixed**: `Semantic risk fixed: <N> instance(s):` followed by one line per affected commit — `- <short-hash> "<commit title>" — <short description of the fix>`.
   - **Either path, couldn't be applied**: `Semantic risk found but couldn't be auto-applied — see above, resolve manually.`
-- Never push, regardless of outcome or which path ran.
+- Pushing is never offered here — that only happens at the very end, in Step 14, once everything else is settled.
 - **Rendering this does not end the step — immediately continue to Step 14 in the same turn; never stop, pause, or wait after rendering.**
 
-### Step 14 — Stop
+### Step 14 — Offer to push
 
-- Never push, never offer to push, no matter what happened above.
+- **Applies regardless of which path led here** — whether Steps 9-13 ran in full, Step 11 found nothing to sync, or nothing at all happened this run (no uncommitted changes and nothing to sync). This step is only ever reached by the flow completing naturally; a decline anywhere earlier (Step 9, 11, or 12) is its own hard stop and never reaches here.
+- **Determine what there is to push**, independently of whatever happened above: the **current branch** (HEAD) — never the target branch, never any other branch.
+  - If the current branch has an upstream configured (`git rev-parse --abbrev-ref --symbolic-full-name @{u}` succeeds): check whether it has any commits not yet on that upstream (`git rev-list --count @{u}..HEAD`).
+  - If it has no upstream yet: check whether it has any commits at all (`git rev-list --count HEAD` if the branch was just created off an empty point, or simply whether the branch exists with commits of its own).
+  - **Nothing to push either way** (no upstream and no local-only commits, or an upstream that's already fully up to date): skip this step entirely — no question, no output.
+- **If there's something to push, determine the remote**:
+  - Current branch already has an upstream → push there, no remote to choose.
+  - No upstream yet → use `<target-remote>` from Step 4 if one was found; otherwise `origin` if that remote exists; otherwise there's no remote to push to — skip this step, disclosing that the branch has no configured remote.
+- `AskUserQuestion`: state exactly what will happen — the branch, the remote, whether this sets a new upstream or updates an existing one, and how many commits are being pushed — and ask whether to push now.
+  - **Declined** → stop, nothing pushed.
+  - **Approved** → run exactly one of:
+    - Existing upstream: `git push`
+    - No upstream yet: `git push -u <remote> <current-branch>`
+  - **Never use `--force`/`--force-with-lease`, under any circumstance.** If the push is rejected (remote has moved ahead, non-fast-forward), report the rejection plainly and stop — don't force, don't retry differently; suggest re-running this command so Steps 11-12 can sync with the target's new state first.
+  - On success, report what was pushed (branch, remote, commit count).
+- **Continue immediately to Step 15 in the same turn — never stop, pause, or wait here.**
+
+### Step 15 — Offer to open a PR/MR
+
+- **Only reached if Step 14 actually pushed** — if Step 14 was skipped (nothing to push) or declined, skip this step entirely too; there's nothing pushed to open a PR/MR from.
+- **Also skip** if the current branch is the same as the target (Step 4) — a PR/MR needs two different branches — or if no target was ever determined.
+- **Detect the hosting platform and whether access already exists in one pass — never obtain, request, or store new credentials, never ask the user to paste a token or API key**: get the pushed-to remote's hostname with `git remote get-url <remote>`, then try, in order:
+  - Hostname is `dev.azure.com` or ends in `.visualstudio.com` → **Azure DevOps**. Check `az account show` — succeeds → already logged in with the Azure CLI (also reflects a service-principal or token-based `az` session). Fails → no access; stop checking, skip this step.
+  - Otherwise, try `gh auth status --hostname <hostname>` → succeeds → **GitHub** (covers both github.com and a GitHub Enterprise Server instance `gh` is already configured for; also reflects a `GH_TOKEN`/`GITHUB_TOKEN` environment token).
+  - Otherwise, try `glab auth status --hostname <hostname>` → succeeds → **GitLab** (covers both gitlab.com and a self-managed instance `glab` is already configured for; also reflects a `GITLAB_TOKEN`/`GLAB_TOKEN` environment token).
+  - **None of the above succeeded** → skip this step entirely — no question, no output beyond a plain one-line disclosure of why (host not recognized by any known CLI / recognized but not authenticated). Never guess at a command for an unrecognized host — only these three platforms are ever supported.
+- **If access exists**: `AskUserQuestion` — show the exact Title and Description last rendered (Step 6, unchanged since unless Step 12 revised it), the source branch (current branch) and base branch (Step 4's target), and ask whether to open the PR/MR now.
+  - **Declined** → stop, nothing created.
+  - **Approved** → run exactly one of:
+    - GitHub: `gh pr create --title "<mr-title>" --body "<mr-description>" --base <target> --head <current-branch>`
+    - GitLab: `glab mr create --title "<mr-title>" --description "<mr-description>" --target-branch <target> --source-branch <current-branch>`
+    - Azure DevOps: `az repos pr create --title "<mr-title>" --description "<mr-description>" --source-branch <current-branch> --target-branch <target>` (org/project/repository are auto-detected from the current repo; only pass them explicitly if that detection fails)
+  - On success, report the returned PR/MR URL. On failure, report the error plainly — don't retry with different flags or fall back to any other approach.
+- **Continue immediately to Step 16 in the same turn — never stop, pause, or wait here.**
+
+### Step 16 — Stop
