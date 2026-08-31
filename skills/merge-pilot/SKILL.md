@@ -1,6 +1,7 @@
 ---
 description: Analyzes uncommitted changes and proposes how to split/organize them into commits with best-practice messages, determines the correct merge target, and writes the MR/PR title/description. Reports the plan first — creates the commits (and branch, if needed) only after explicit approval, then separately offers to sync the branch with its target (fast-forward, rebase, or merge), resolving conflicts and any detected semantic risks along the way, each gated behind its own approval. Never pushes, ever.
 argument-hint: [optional: focus area, e.g. "only look at src/"]
+disable-model-invocation: true
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git ls-files:*), Bash(git ls-remote:*), Bash(git merge-base:*), Bash(git rev-list:*), Bash(git cherry:*), Bash(git config:*), Bash(git for-each-ref:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git apply:*), Bash(git fetch:*), Bash(git rebase:*), Bash(git merge:*), Bash(git reset:*), Bash(git rm --cached:*), Bash(git merge-tree:*), Bash(git worktree:*), Bash(npm install --package-lock-only --ignore-scripts:*), Bash(pnpm install --lockfile-only:*), Bash(yarn install --ignore-scripts:*), Bash(bundle lock:*), Bash(poetry lock:*), Read, Edit, AskUserQuestion
 ---
 

@@ -35,7 +35,7 @@ Clone it, or just download it as a ZIP — anywhere on your machine, the install
 
 Double-click it, or run it from a terminal. It mirrors everything in this repo into `%USERPROFILE%\.claude`.
 
-> ℹ️ The script is just a convenience — nothing requires it. You can just as well copy only the specific files you want (e.g. a single command from `commands/`) into `%USERPROFILE%\.claude` yourself.
+> ℹ️ The script is just a convenience — nothing requires it. You can just as well copy only the specific files you want (e.g. a single skill from `skills/`) into `%USERPROFILE%\.claude` yourself.
 
 <br>
 
@@ -59,7 +59,7 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 
 - **`install.bat`** — the installer
 - **`CLAUDE.md`** — master prompt, detailed below
-- **`commands/`** — custom slash commands, detailed below
+- **`skills/`** — custom slash commands (Skills), detailed below
 
 <br>
 
@@ -71,9 +71,9 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 
 <br>
 
-### ⚡ Commands
+### ⚡ Skills
 
-| Command | What it does |
+| Skill | What it does |
 |---------|---------------|
 | `/merge-pilot` | Proposes how to organize your uncommitted changes into clean commits, then creates them once you approve — complete with a ready-to-use PR description. Can then optionally sync the branch with its target, resolving conflicts along the way. Never pushes |
 
