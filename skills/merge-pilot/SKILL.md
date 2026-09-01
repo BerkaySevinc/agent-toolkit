@@ -5,7 +5,7 @@ disable-model-invocation: true
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git ls-files:*), Bash(git ls-remote:*), Bash(git remote:*), Bash(git merge-base:*), Bash(git rev-list:*), Bash(git cherry:*), Bash(git config:*), Bash(git for-each-ref:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git apply:*), Bash(git fetch:*), Bash(git rebase:*), Bash(git merge:*), Bash(git reset:*), Bash(git rm --cached:*), Bash(git merge-tree:*), Bash(git worktree:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh pr create:*), Bash(glab auth status:*), Bash(glab mr create:*), Bash(az account show:*), Bash(az repos pr create:*), Bash(npm install --package-lock-only --ignore-scripts:*), Bash(pnpm install --lockfile-only:*), Bash(yarn install --ignore-scripts:*), Bash(bundle lock:*), Bash(poetry lock:*), Read, Edit, AskUserQuestion
 ---
 
-**Critical constraint:** Steps 1-8 (the analysis and report) are always read-only — never run `git add`, `git commit`, `git checkout`, `git apply`, `git rebase`, `git merge`, `git reset`, `git rm`, `git push`, `gh pr create`, `glab mr create`, `az repos pr create`, a lockfile regenerate command, or any other state-changing command during them. `git merge-tree` and `git worktree add`/`remove` (Step 12's conflict/rebase preview) never touch your real branch or working tree, so they run freely during the preview, before approval — including a lockfile regenerate command run inside that temporary worktree, purely to see its result. Everything that changes your **real** branch — `git add`/`git commit`/`git checkout`/`git apply`/`git reset`/`git rm --cached`/`git rebase`/`git merge` (and their `--continue`/`--abort` forms), and a lockfile regenerate command run for real — is only permitted in Step 10 (after Step 9's approval) or Step 12's real-execution section (after Step 12's own combined-plan approval); approving one step never implies approval for another; Steps 9, 11, 12, 14, and 15 are each independently gated. `Edit` is only permitted in Step 12, and only *after* its own `AskUserQuestion` is approved — never write a proposed resolution or fix to disk (real or previewed) before it's shown and approved. `git push` is only ever run in Step 14 — reached only once everything else is settled — and only after its own explicit approval there; `gh pr create`/`glab mr create`/`az repos pr create` is only ever run in Step 15, only after Step 14 actually pushed and only after Step 15's own separate approval; approval anywhere earlier (Step 9, 11, 12, or 14) never implies approval for the next gate. Even in Step 14, only a plain `git push` (setting upstream with `-u` if none exists yet) is ever used — `--force`/`--force-with-lease` is never used, under any circumstance, and only the current branch is ever pushed, never the target branch directly. Step 15 only ever uses **already-existing** authentication (a logged-in `gh`/`glab`/`az` CLI, including one backed by an environment token, for GitHub, GitLab, or Azure DevOps only — no other host is ever supported) to open the PR/MR — it never requests, obtains, prompts for, or stores any credential, token, or API key itself. **`git reset` is only ever run bare (no flags)** — `--hard`/`--mixed`/`--soft` are never used; a bare `git reset` only unstages, it never touches the working tree, which is the only variant that's ever safe here. **`git rm` is only ever run with `--cached`** — never bare, which would also delete the file from the working tree; `--cached` only removes it from the index (used for the case-only-rename handling in Step 10).
+**Critical constraint:** Steps 1-8 (the analysis and report) are always read-only — never run `git add`, `git commit`, `git checkout`, `git apply`, `git rebase`, `git merge`, `git reset`, `git rm`, `git push`, `gh pr create`, `glab mr create`, `az repos pr create`, a lockfile regenerate command, or any other state-changing command during them. `git merge-tree` and `git worktree add`/`remove` (Step 12's conflict/rebase preview) never touch your real branch or working tree, so they run freely during the preview, before approval — including a lockfile regenerate command run inside that temporary worktree, purely to see its result. Everything that changes your **real** branch — `git add`/`git commit`/`git checkout`/`git apply`/`git reset`/`git rm --cached`/`git rebase`/`git merge` (and their `--continue`/`--abort` forms), and a lockfile regenerate command run for real — is only permitted in Step 10 (after Step 9's approval) or Step 12's real-execution section (after Step 12's own combined-plan approval); approving one step never implies approval for another; Steps 9, 11, 12, 14, and 15 are each independently gated. `Edit` is only permitted in Step 12 (only *after* its own `AskUserQuestion` is approved — never write a proposed resolution or fix to disk, real or previewed, before it's shown and approved) or in Step 10, and only as that step's split-file fallback — which never introduces new content, only ever temporarily toggling a file between two states the plan already showed and got approved. `git push` is only ever run in Step 14 — reached only once everything else is settled — and only after its own explicit approval there; `gh pr create`/`glab mr create`/`az repos pr create` is only ever run in Step 15, only after Step 14 actually pushed and only after Step 15's own separate approval; approval anywhere earlier (Step 9, 11, 12, or 14) never implies approval for the next gate. Even in Step 14, only a plain `git push` (setting upstream with `-u` if none exists yet) is ever used — `--force`/`--force-with-lease` is never used, under any circumstance, and only the current branch is ever pushed, never the target branch directly. Step 15 only ever uses **already-existing** authentication (a logged-in `gh`/`glab`/`az` CLI, including one backed by an environment token, for GitHub, GitLab, or Azure DevOps only — no other host is ever supported) to open the PR/MR — it never requests, obtains, prompts for, or stores any credential, token, or API key itself. **`git reset` is only ever run bare (no flags)** — `--hard`/`--mixed`/`--soft` are never used; a bare `git reset` only unstages, it never touches the working tree, which is the only variant that's ever safe here. **`git rm` is only ever run with `--cached`** — never bare, which would also delete the file from the working tree; `--cached` only removes it from the index (used for the case-only-rename handling in Step 10).
 
 **Important:** Every Bash call is exactly one command — nothing else in it, ever. Never combine anything with `&&`, `;`, a shell loop (`for`/`while`), a pipe (`|`), or command substitution (`$(...)`) — this includes `cd` (or any other non-git command) chained in front of a git command. This applies even when a step involves many similar commands (e.g. Step 4 checking each candidate branch); one Bash call per command, always, no batching or chaining for convenience. If the working directory needs to change, run `cd` once as its own separate call first — the working directory persists across calls, so every command after that runs there directly, with no `cd` repeated or chained into any of them.
 
@@ -36,12 +36,7 @@ Act as a world-class, professional software engineer with deep git best-practice
 
 All output — prose, commit messages, branch names, MR title/description — is in English, matching this repo's own derived convention where applicable, or $ARGUMENTS if it specifies otherwise.
 
-Emojis are only allowed in these exact spots, nowhere else:
-1. At the **start** of each top-level `#` heading: `# Branch` gets ✅ (OK) or ⚠️ (ISSUE), `# New Commits` gets 📝, `# Merge Request` gets 🔀, `# Committer` gets 👤.
-2. In each commit heading's ordinal number, using the keycap-style number emoji (1️⃣, 2️⃣, 3️⃣, ... up to 🔟). Past 10, use a plain digit.
-3. At the start of each of the Merge Request section's `### New commits` / `### Existing commits` headings — same 📝 as the Commits heading.
-
-No other emoji, icon, or symbol may appear anywhere in the output.
+Emojis appear only where a step's template literally shows one in a heading — never anywhere else (no decorating prose, notes, commit messages, or the MR description body).
 
 ## Instructions
 
@@ -51,13 +46,23 @@ Steps 1-7 are analysis only — nothing is rendered until Step 8, which renders 
 
 **If a rebase or merge is already in progress** (Context's repo status shows `rebase in progress`, `You are currently rebasing`, `You have unmerged paths`, or similar — check this before anything else, including the no-uncommitted-changes case below): don't run Steps 1-8's normal analysis — the working tree is mid-operation, not a stable state to analyze fresh.
 
-- Summarize what's found: which operation (rebase or merge), the target if determinable, which files are still conflicted vs. already resolved/staged.
+- **Render what's found** — same conventions as the rest of this doc: headings shown as inline code are real markdown headings, never fenced; before this section's own `#`-level heading use `---`; before each `###`-level sub-heading below, insert a blank line, then a line containing only `&nbsp;`, then another blank line; omit either file list entirely if it's empty.
+
+  `---`, then heading `# ⚠️ <Rebase or Merge, whichever is in progress> In Progress`, then, if the target is determinable, one plain line: `Target: <target>` (omit this line entirely if not determinable).
+
+  &nbsp;
+
+  Heading `### 💥 Conflicted files (<N>)`, then a plain list of the still-conflicted files.
+
+  &nbsp;
+
+  Heading `### ✅ Already resolved/staged (<M>)`, then a plain list of the files already resolved/staged (omit this whole sub-heading if none).
 - `AskUserQuestion`: how to proceed?
   - **Continue resolving here** — go directly to Step 12's real-execution section (conflicts already present), immediately in the same turn, using the currently conflicted files. This run never executed Step 12's preview or semantic-impact check, so skip them entirely; disclose this in the final report.
   - **Abort and start fresh** — run `git rebase --abort` or `git merge --abort` (matching whichever is in progress), then continue immediately to Step 1 in the same turn — never stop, pause, or wait here.
   - **Leave it alone** — stop immediately, nothing runs.
 
-**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 New Commits (0)`, no commit blocks), and omit the Merge Request section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, the entire `# 🔀 Merge Request` section is omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
+**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 New Commits (0)`, no commit blocks), and omit the Summary section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the Summary section's **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, both the `# 🔀 Merge Request` and `# 📋 Summary` sections are omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
 
 ### Step 1 — Check whether HEAD is on a protected/mainline branch, or detached
 
@@ -162,10 +167,10 @@ The repo's default branch isn't necessarily the real MR target (e.g. default `ma
 Follow this structure exactly — same headings, order, and labels; only the bracketed parts change.
 
 **Two kinds of elements below, never confuse them:**
-- **Headings**, shown here as inline code like `### Title` — render these as **real markdown headings** in your actual output, never inside a fenced code block.
+- **Headings**, shown here as inline code like `### 🏷️ Title` — render these as **real markdown headings** in your actual output, never inside a fenced code block.
 - **Fenced values**, shown here inside an actual ``` code block — render these **inside a real fenced code block** in your actual output, exactly as shown. Only five things ever get a fence: the current/suggested branch name, the target branch name, each commit's message, the MR title, and the MR description. Nothing else is ever fenced — not headings, not the file list, not the commit lists.
 
-**Spacing:** two different separators, don't mix them up. Between the four **main** (`#`-level) sections — Branch, Commits, Merge Request, Committer — use `---` as before. Before every **sub**-heading (every `###`-level line shown here as inline code, e.g. `### Title`) and between commit blocks, instead insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly in this output, `&nbsp;` on its own line is what actually produces visible breathing room.
+**Spacing:** two different separators, don't mix them up. Between the five **main** (`#`-level) sections — Branch, New Commits, Merge Request, Committer, Summary — use `---` as before. Before every **sub**-heading (every `###`-level line shown here as inline code, e.g. `### 🏷️ Title`) and between commit blocks, instead insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly in this output, `&nbsp;` on its own line is what actually produces visible breathing room.
 
 **Copy-paste hygiene** (for the five fenced values): each gets its own fence, without exception, even a single short line — no blank line before or after the content. A multi-line message (subject, blank line, body) is still **one single fence** — the blank line between subject and body is part of the content, not a fence boundary; never close the fence there and let the body spill out as plain text below it. Example — heading `### Message` (real heading), then the message in its own fence:
 
@@ -220,11 +225,62 @@ then plain text `Files (<N>):` followed by a plain list — never fenced:
 
 Filenames in this list are filenames only, no path (add minimal parent folder only to disambiguate same-name files in different folders).
 
-After the last commit block, `---`, then the Merge Request section — **the same template Steps 10 and 13 reuse when they re-render this section later**.
+After the last commit block, `---`, then the Merge Request section, then `---`, then the Committer section, then `---`, then the Summary section — **the Summary template is what Steps 10 and 13 reuse when they re-render later; the Merge Request and Committer sections themselves render once here and are never repeated**.
 
-Heading `# 🔀 Merge Request`.
+**If both New commits and Existing commits counts are 0** (nothing new to propose and nothing prior found), there's no actual merge request to describe — omit **both** the `# 🔀 Merge Request` and `# 📋 Summary` sections entirely, headings and all — a title/description for a non-existent PR isn't useful, and a summary of nothing isn't either.
 
-Two separate lists, each with its own count and its own independent keycap-emoji numbering (both start at 1️⃣), each a **plain list — never fenced**. **Omit either list entirely if its count is 0**. **If both counts are 0** (nothing new to propose and nothing prior found), there's no actual merge request to describe — omit the entire `# 🔀 Merge Request` section instead, heading and all (Assumed target, Squash check, Title, Description included too) — a title/description for a non-existent PR isn't useful.
+Heading `# 🔀 Merge Request` — this section is **pure MR/PR content only**, exactly what you'd paste into the host's own PR/MR form: no commit lists here.
+
+Heading `### 🎯 Assumed target`, then its own fence:
+
+```
+<target-branch-name>
+```
+
+Right after the target code block, one plain parenthetical line — not a separate heading or label: `(squash check: <ran, detected / ran, not detected / skipped — HEAD was on a mainline branch>)`
+
+If Step 4 needed a judgment-call tiebreak, add: `Note: also equidistant from feat/C — picked feat/A based on branch naming.` If Step 4's fork-point search found nothing shared, add: `Note: no shared history found with any other branch; defaulted to this branch as its own target.` If Step 4's verification disagreed and it fell back to the distance method, add: `Note: fork-point search couldn't be verified; fell back to distance-based candidate check.` If that fallback capped candidates at 30, add: `Note: repo has 214 branches — only the 30 most recently active were checked; specify via arguments if the real target is older.` If Step 4's freshness check excluded a stale target, add: `Note: <old-target> was determined as the target but no longer exists on the remote (likely deleted after merging) — <new-target> was used instead.` Omit any note that doesn't apply. **These five are the only notes that ever appear here — never invent a new one, even if some part of Step 4's computation seems unusual or worth explaining; if none of the five apply, show nothing.**
+
+&nbsp;
+
+Heading `### 🏷️ Title`, then its own fence:
+
+```
+<mr-title>
+```
+
+Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back — the whole Summary/Changes/Testing markdown goes inside this one block as literal text, not rendered as real headings:
+
+```
+<mr-description>
+```
+
+Title and Description cover the full change — all commits combined (many git hosts auto-populate the MR/PR description from only the first commit). See Step 6.
+
+`---`, then heading `# 👤 Committer` (real heading), then plain text, never fenced:
+
+Name: <committer-name>
+Email: <committer-email>
+
+Copy directly from context — don't alter or guess.
+
+`---`, then heading `# 📋 Summary` — this section recaps **everything from the whole report at a glance**: Branch, both commit lists, the MR fields, and the Committer, all in one place. It's what Steps 10 and 13 re-render in full after later steps run, so the user always has the full picture without scrolling back.
+
+Heading `### <✅ or ⚠️ — same Branch status as above> Branch`, then the **current** branch name (whatever it actually is at the moment of this render — the newly-created branch if Step 10 already ran) in its own fence:
+
+```
+<current-branch-name>
+```
+
+Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no Step 4 notes here, those stay in the Merge Request section above and aren't repeated:
+
+```
+<target-branch-name>
+```
+
+&nbsp;
+
+Two separate lists, each with its own count and its own independent keycap-emoji numbering (both start at 1️⃣), each a **plain list — never fenced**. **Omit either list entirely if its count is 0.**
 
 Heading `### 📝 Existing commits (<M>)`, then plain list:
 1️⃣ <real commit subject line-1>
@@ -242,42 +298,26 @@ Heading `### 📝 New commits (<N>)`, then plain list:
 
 &nbsp;
 
-Heading `### Assumed target`, then its own fence:
+Heading `### 👤 Committer`, then plain text, never fenced:
 
-```
-<target-branch-name>
-```
-
-Right after the target code block, one plain parenthetical line — not a separate heading or label: `(squash check: <ran, detected / ran, not detected / skipped — HEAD was on a mainline branch>)`
-
-If Step 4 needed a judgment-call tiebreak, add: `Note: also equidistant from feat/C — picked feat/A based on branch naming.` If Step 4's fork-point search found nothing shared, add: `Note: no shared history found with any other branch; defaulted to this branch as its own target.` If Step 4's verification disagreed and it fell back to the distance method, add: `Note: fork-point search couldn't be verified; fell back to distance-based candidate check.` If that fallback capped candidates at 30, add: `Note: repo has 214 branches — only the 30 most recently active were checked; specify via arguments if the real target is older.` If Step 4's freshness check excluded a stale target, add: `Note: <old-target> was determined as the target but no longer exists on the remote (likely deleted after merging) — <new-target> was used instead.` Omit any note that doesn't apply. **These five are the only notes that ever appear here — never invent a new one, even if some part of Step 4's computation seems unusual or worth explaining; if none of the five apply, show nothing.**
+Name: <committer-name>
+Email: <committer-email>
 
 &nbsp;
 
-Heading `### Title`, then its own fence:
+Heading `### 🏷️ Title`, then its own fence:
 
 ```
 <mr-title>
 ```
 
-&nbsp;
-
-Heading `### Description`, then its own fence — the whole Summary/Changes/Testing markdown goes inside this one block as literal text, not rendered as real headings:
+Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
 ```
 <mr-description>
 ```
 
-Title and Description cover the full change — all commits combined (many git hosts auto-populate the MR/PR description from only the first commit). See Step 6.
-
-At the very end, after `---`: heading `# 👤 Committer` (real heading), then plain text, never fenced:
-
-Name: <committer-name>
-Email: <committer-email>
-
-Copy directly from context — don't alter or guess.
-
-- Render the full response in this exact order: Branch, Commits, Merge Request, Committer.
+- Render the full response in this exact order: Branch, New Commits, Merge Request, Committer, Summary.
 - **Rendering this output does not end the step — immediately continue to Step 9 in the same turn; never stop, pause, or wait after rendering.**
 
 ### Step 9 — Ask whether to apply the plan
@@ -297,41 +337,60 @@ Copy directly from context — don't alter or guess.
 - **Per commit, in order**:
   - Never `git add` a file Step 2 excluded as a likely secret, even if it would otherwise belong to this commit's concern — it was deliberately left out of every commit's file list.
   - Whole (unsplit) files: `git add <file>` (handles new/modified/deleted correctly). For a rename, `git add <old-path> <new-path>` in that same single call — both paths together, so the deletion and the addition are staged as one rename, not a stray delete plus an untracked add. **Exception — case-only rename** (old and new path are identical except for letter case, e.g. `Foo.txt` → `foo.txt`): on a case-insensitive filesystem (Windows, default macOS) the combined `git add <old-path> <new-path>` call can get confused since both paths resolve to the same physical file. Instead, `git rm --cached <old-path>` (index only — nothing to touch in the working tree anyway) then `git add <new-path>`.
-  - Split files: apply just the relevant hunk(s) (file header + those `@@ ... @@` blocks only, copied verbatim from the diff) with a single `git apply --cached` call fed via a quoted heredoc — `git apply --cached <<'PATCH_EOF'` then the hunk content then `PATCH_EOF` — no temp file, git reads the patch straight from stdin. **The heredoc delimiter must be quoted** (`<<'PATCH_EOF'`, not `<<PATCH_EOF`), so the shell doesn't expand `$`, backticks, or other special characters that may appear inside the diff. Then verify with `git diff --cached <file>` that only the intended hunk(s) got staged. If it doesn't match, unstage, skip auto-committing that file, and note in the final report that it needs manual staging.
+  - Split files: apply just the relevant hunk(s) (file header + those `@@ ... @@` blocks only, copied verbatim from the diff) with a single `git apply --cached` call fed via a quoted heredoc — `git apply --cached <<'PATCH_EOF'` then the hunk content then `PATCH_EOF` — no temp file, git reads the patch straight from stdin. **The heredoc delimiter must be quoted** (`<<'PATCH_EOF'`, not `<<PATCH_EOF`), so the shell doesn't expand `$`, backticks, or other special characters that may appear inside the diff. **Transcribe every hunk with care — this is the actual common failure point, not the heredoc mechanism itself, and a correctly-transcribed hunk (blank context lines and all) applies via heredoc without issue**: a blank line inside a hunk's unchanged (context) region must be copied as a line containing exactly one space character, never a truly empty line; the `@@ -a,b +c,d @@` header's own declared counts (`b` = old-file context+removed lines that follow, `d` = new-file context+added lines that follow) must exactly match the number of such lines actually transcribed; and a hunk's context extends on **both** sides of the change — the trailing context lines right before the *next* hunk's `@@` header (or the end of the diff) belong to *this* hunk and are easy to mistake for a mere gap and drop. Get any of this wrong and git rejects it with `error: corrupt patch at line N`, unrelated to quoting. Then verify with `git diff --cached <file>` that only the intended hunk(s) got staged.
+  - **If the heredoc attempt fails** (a shell error, or `error: corrupt patch...`): re-examine the hunk specifically for the mistakes above (a dropped or miscounted context line — especially at the hunk's trailing boundary — or a blank context line missing its single space) and retry the heredoc **once more** with the correction. If this second attempt also fails, stop retrying the heredoc and switch to this fallback instead — it never transcribes hunk syntax at all (so it can't hit the same failure) and is checkpointed at every step so a mistake here can never lose the plan's already-approved content:
+    - **Checkpoint**: `git add <file>` — stages the file's current content (still this plan's exact, fully-approved final state at this point) into the index. From here on, `git checkout -- <file>` always restores exactly this state, no matter what happens next.
+    - Use `Edit` to rewrite the working tree file back to just this commit's intended intermediate content (undo only the string changes belonging to the *other* commit(s) in this split, keeping this commit's own change in place — plain, exact `old_string`/`new_string` substitutions, no line-counting involved).
+    - **Verify before staging**: `git diff <file>`. If it shows anything other than exactly the expected reversal, automatically run `git checkout -- <file>` then a bare `git reset -- <file>` (restores the checkpoint above and leaves it unstaged — nothing is lost), skip auto-committing this file, and note in the final report that it needs manual staging — don't ask first, don't attempt a third rewrite.
+    - If it matches: `git add <file>`, then commit with this commit's exact message. The commit itself is now the new checkpoint — permanent and safe.
+    - For each further split commit on this same file: use `Edit` again to redo the next chunk of undone changes, verify with `git diff <file>` the same way, and either commit (extending the checkpoint chain) or — on a mismatch — automatically `git checkout -- <file>` plus a bare `git reset -- <file>` (restores the *previous* commit's state; everything up to and including it stays safe) and report that this remaining commit needs manual staging.
   - Commit with the exact message from the plan — subject via `-m`, body (if any) via a second `-m` — no Co-Authored-By trailer, no wording changes.
   - Before committing the next file that was split further down (later hunks of the same file), re-derive its remaining diff from the current state — the file has changed since the last commit.
 - **Once all commits are made, verify nothing was left behind**: run one more `git status --untracked-files=all` and compare against what's expected to still show — Step 2's excluded-secret files, and any split file that failed hunk verification above. Anything else still staged/unstaged/untracked wasn't accounted for by the plan; note it in the final report as an unexpected leftover (don't stop, don't ask — just disclose it).
-- **Re-render the `# 🔀 Merge Request` section in full**, using this template (same as Step 8's — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
+- **Re-render the `# 📋 Summary` section in full** — not the Merge Request section, which rendered once in Step 8 and is never repeated — using this template (same as Step 8's Summary — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### 🏷️ Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
 
-  Heading `# 🔀 Merge Request`.
-
-  &nbsp;
-
-  Both lists — heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ...; heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
-
-  The **Existing commits** list, if shown, is unaffected by this re-render. Change the **New commits** label to `New commits applied (<N>)` instead of `New commits to be applied (<N>)` — confirms exactly what happened.
+  Heading `# 📋 Summary`.
 
   &nbsp;
 
-  Heading `### Assumed target`, then its own fence:
+  Heading `### <✅ or ⚠️> Branch`, then the **current** branch name (whatever it actually is right now, post-Step-10 — the newly-created branch if one was made) in its own fence:
+
+  ```
+  <current-branch-name>
+  ```
+
+  Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no notes, those live only in Step 8's Merge Request section:
 
   ```
   <target-branch-name>
   ```
 
-  `(squash check: <ran, detected / ran, not detected / skipped — HEAD was on a mainline branch>)` — plus the same tiebreak/fallback/freshness notes as Step 8's render, if they applied there.
+  &nbsp;
+
+  Both lists — heading `### 📝 Existing commits (<M>)` then plain list `1️⃣ <real commit subject line-1>` ...; heading `### 📝 New commits (<N>)` then plain list `1️⃣ <Title-1>` ... — own count and keycap numbering each, never fenced, omit either if its count is 0, omit the whole section if both are 0.
+
+  The **Existing commits** list, if shown, is unaffected by this re-render. Change the **New commits** label to `New commits applied (<N>)` instead of `New commits to be applied (<N>)`, and append each commit's real short hash to its own line — `1️⃣ <Title-1> — <short-hash-1>` — confirms exactly what happened and exactly which real commit it landed as.
+
+  If any file needed manual staging (the split-file fallback's mismatch case): &nbsp;, then heading `### ⚠️🔧 Manual staging needed (<N>)`, then a plain list of just the filenames, then one closing plain line covering all of them: `Stage and commit these manually — the automated split fallback couldn't verify their content matched the plan.`
+
+  If any unexpected leftover files were found: &nbsp;, then heading `### ⚠️🗑️ Unexpected leftovers (<N>)`, then a plain list of those files.
 
   &nbsp;
 
-  Heading `### Title`, then its own fence:
+  Heading `### 👤 Committer`, then plain text, never fenced:
+
+  Name: <committer-name>
+  Email: <committer-email>
+
+  &nbsp;
+
+  Heading `### 🏷️ Title`, then its own fence:
 
   ```
   <mr-title>
   ```
 
-  &nbsp;
-
-  Heading `### Description`, then its own fence — the whole Summary/Changes/Testing markdown goes inside this one block as literal text, not rendered as real headings:
+  Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
   ```
   <mr-description>
@@ -339,7 +398,7 @@ Copy directly from context — don't alter or guess.
 
   Title and Description are unchanged from Step 8's render unless something here (e.g. a manual-staging fallback) actually changes what's being proposed.
 
-  Follow the re-rendered section with each commit's short hash, the branch (if created), any file that needed manual staging, and any unexpected leftover files found above. Pushing is never offered here — that only happens at the very end, in Step 14, once everything else is settled.
+  Pushing is never offered here — that only happens at the very end, in Step 14, once everything else is settled.
 - **Rendering this does not end the step — immediately continue to Step 11 in the same turn; never stop, pause, or wait after rendering.**
 
 ### Step 11 — Offer to sync with the target
@@ -398,10 +457,31 @@ If creating a fresh worktree just for this (the merge path, or no worktree was k
 
 **Binary comparison prep** (if any binary conflicted): fetch each side the same commit-based way as above (merge: `git show HEAD:<file>` / `git show <target-remote>/<target>:<file>`; rebase: running-base commit / originally-replayed commit, same ours/theirs flip). Just note the two sizes/paths — no visual comparison, even for images; there's no meaningful way to judge which is "correct," so leave that call to the user.
 
-**Build one combined plan** and show it:
-- Normal-file resolutions.
-- Semantic-impact fixes: **merge path** — list together (they all land in the one merge commit); **rebase path** — group under each affected commit's own heading, showing which fix(es) go into which commit.
-- Lockfile regenerate preview (which packages changed) and binary comparison (sizes/paths) — shown here as information only; flag that each one still needs its own choice, asked below only if you choose to apply.
+**Build the Sync Plan and show it** — same rendering conventions as Step 8: headings shown here as inline code (e.g. `### 💥 Text conflicts`) are real markdown headings, never fenced; before this section's own `#`-level heading use `---`; before each `###`-level sub-heading below, insert a blank line, then a line containing only `&nbsp;`, then another blank line. **Omit any sub-section that has nothing to show, heading and all** (e.g. no binary conflicts found → no `### 📦 Binary` at all).
+
+`---`, then heading `# 🔄 Sync Plan`.
+
+&nbsp;
+
+Heading `### 💥 Text conflicts` (only if any normal file conflicted), then a plain list — never fenced — one entry per file: `- <file> — <how both sides are combined, in plain language>`.
+
+&nbsp;
+
+Heading `### 🧠 Semantic risks` (only if the semantic-impact check found anything). Content depends on the path:
+- **Merge path**: a flat plain list, one entry per risk: `- <what changed on the incoming side, and why it's a risk> — affects <keycap-emoji> "<commit identifier>"; included in the merge commit.`
+- **Rebase path**: grouped under each affected commit, earliest to latest. For each: a bold line `**<keycap-emoji> "<commit identifier>"**`, then directly below it on its own line, in italics, the landing mechanic — `*(also conflicts above — fix lands together with it, one commit)*` if this same commit already has a Text conflicts entry, otherwise `*(applies cleanly — fix folded in via `git commit --amend`)*` — then a plain list of the fix(es) for that commit. A blank line separates each commit's group from the next; no `&nbsp;` needed there, only around the whole sub-heading.
+
+In both cases, `<keycap-emoji>` and `<commit identifier>` are copied from wherever that commit already appears in this run's report — the New-commits list's own number and Title if it's one of Step 2-3's commits, or the Existing-commits list's own number and real commit subject line if it's one of Step 5's surviving prior commits — never invent a Title for an existing commit.
+
+&nbsp;
+
+Heading `### 🔒 Lockfile` (only if any lockfile conflicted), then a plain list — one entry per file: `- <file> — regenerated preview: <which packages changed, old/new versions, additions/removals>.`
+
+&nbsp;
+
+Heading `### 📦 Binary` (only if any binary file conflicted), then a plain list — one entry per file: `- <file> — ours: <size>, theirs (<target>): <size>. No way to judge visually which is correct.`
+
+If either Lockfile or Binary was shown: &nbsp;, then one closing plain line (not a heading): `Each lockfile and binary item above still needs its own choice — asked next, once this plan is approved.`
 
 `AskUserQuestion`: how do you want to proceed?
 - **Apply the plan**: continue below — one more round of questions for each lockfile/binary choice, then the real execution.
@@ -410,7 +490,7 @@ If creating a fresh worktree just for this (the merge path, or no worktree was k
 
 **If "Apply the plan" was chosen**: ask the remaining per-file choices before doing anything else — one or more `AskUserQuestion` calls (up to 4 questions each, split across multiple calls if there are more), one question per lockfile ("use the regenerated result, or leave for manual?") and one per binary file ("keep ours, keep theirs, or leave for manual?"). Once every choice is made, continue to the real execution below.
 
-**If reached from the mid-rebase/merge guard instead**: skip the preview above entirely — the sync command already ran (outside this run, or in an earlier run that stopped here) and is already conflicted for real; no semantic-impact finding is available in this case (Step 11 never ran). Build a smaller plan for just what's actually conflicted right now, the same way:
+**If reached from the mid-rebase/merge guard instead**: skip the preview above entirely — the sync command already ran (outside this run, or in an earlier run that stopped here) and is already conflicted for real; no semantic-impact finding is available in this case (Step 11 never ran), so the Sync Plan's `### 🧠 Semantic risks` sub-section never applies here. Build the same Sync Plan template above, using only what's actually conflicted right now:
 
 - Classify the currently conflicting files (normal/lockfile/binary), propose resolutions for normal files, and prepare a lockfile-regenerate preview and binary comparison the same way as above — directly against the real, already-conflicted state (no worktree needed, it's already real, not a simulation).
 - Show this plan. `AskUserQuestion`: how do you want to proceed?
@@ -440,9 +520,23 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
 
 ### Step 13 — Render the final sync report
 
-- **Re-render the `# 🔀 Merge Request` section in full**, once more, using this template (same as Step 8's — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
+- **Re-render the `# 📋 Summary` section in full**, once more — not the Merge Request section, which rendered once in Step 8 and is never repeated — using this template (same as Step 8's Summary — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### 🏷️ Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
 
-  Heading `# 🔀 Merge Request`.
+  Heading `# 📋 Summary`.
+
+  &nbsp;
+
+  Heading `### <✅ or ⚠️> Branch`, then the **current** branch name (whatever it actually is right now) in its own fence:
+
+  ```
+  <current-branch-name>
+  ```
+
+  Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no notes, those live only in Step 8's Merge Request section:
+
+  ```
+  <target-branch-name>
+  ```
 
   &nbsp;
 
@@ -450,36 +544,44 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
 
   Same content and labels as whichever version — `New commits to be applied`, `New commits applied`, or omitted — was last shown; don't relabel it here.
 
-  &nbsp;
-
-  Heading `### Assumed target`, then its own fence:
-
-  ```
-  <target-branch-name>
-  ```
-
-  `(squash check: <ran, detected / ran, not detected / skipped — HEAD was on a mainline branch>)` — plus the same tiebreak/fallback/freshness notes as before, if they applied.
+  If Step 10 showed `### ⚠️🔧 Manual staging needed` and/or `### ⚠️🗑️ Unexpected leftovers`: carry them forward here unchanged, same files, right after the commit lists, same as Step 10's Summary — don't re-derive or re-check them.
 
   &nbsp;
 
-  Heading `### Title`, then its own fence:
+  Heading `### 👤 Committer`, then plain text, never fenced:
+
+  Name: <committer-name>
+  Email: <committer-email>
+
+  &nbsp;
+
+  Heading `### 🏷️ Title`, then its own fence:
 
   ```
   <mr-title>
   ```
 
-  &nbsp;
-
-  Heading `### Description`, then its own fence — the whole Summary/Changes/Testing markdown goes inside this one block as literal text, not rendered as real headings:
+  Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
   ```
   <mr-description>
   ```
 
-  With lines appended for whatever actually happened: `Synced with <target>: <rebase/merge/fast-forward> completed.`, plus, if applicable, `Conflicts resolved: <N> file(s).` and, for semantic risk:
-  - **Merge path, fixed**: `Semantic risk fixed: <N> instance(s), included in the merge commit.`
-  - **Rebase path, fixed**: `Semantic risk fixed: <N> instance(s):` followed by one line per affected commit — `- <short-hash> "<commit title>" — <short description of the fix>`.
-  - **Either path, couldn't be applied**: `Semantic risk found but couldn't be auto-applied — see above, resolve manually.`
+  Follow it with the `# 🏁 Sync Result` section — same rendering conventions as the Sync Plan above: headings shown as inline code are real markdown headings, never fenced; before this section's own `#`-level heading use `---`; before each `###`-level sub-heading below, insert a blank line, then a line containing only `&nbsp;`, then another blank line; omit any sub-section that has nothing to show, heading and all.
+
+  `---`, then heading `# 🏁 Sync Result`, then one plain line: `Synced with <target>: <rebase/merge/fast-forward> completed.`
+
+  &nbsp;
+
+  Heading `### 🔧 Conflicts resolved (<N>)` (only if any conflict was actually resolved), then a plain list of the resolved files — the same files already named in the Sync Plan's Text conflicts/Lockfile/Binary sections above.
+
+  &nbsp;
+
+  Heading `### 🧠 Semantic risks fixed (<N>)` (only if semantic risk was found and fixed):
+  - **Merge path**: a flat plain list — `- <short description of the fix>; included in the merge commit.`
+  - **Rebase path**: one line per affected commit — `- <short-hash> <keycap-emoji> "<commit identifier>" — <short description of the fix>` — same `<keycap-emoji>`/`<commit identifier>` convention as the Sync Plan.
+
+  If semantic risk was found but couldn't be auto-applied instead: heading `### ⚠️ Semantic risk not auto-applied`, then one plain line: `Found but couldn't be auto-applied — see the Sync Plan above, resolve manually.`
 - Pushing is never offered here — that only happens at the very end, in Step 14, once everything else is settled.
 - **Rendering this does not end the step — immediately continue to Step 14 in the same turn; never stop, pause, or wait after rendering.**
 
