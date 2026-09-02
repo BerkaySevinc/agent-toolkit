@@ -38,6 +38,8 @@ All output — prose, commit messages, branch names, MR title/description — is
 
 Emojis appear only where a step's template literally shows one in a heading — never anywhere else (no decorating prose, notes, commit messages, or the MR description body).
 
+Every fenced block is opened and closed in matched pairs — a single stray or missing ``` anywhere in a response flips the parity for everything rendered after it, silently breaking every heading, list, and fence beyond that point with no visible error. Before sending any response that contains a fenced value, count the lines that are exactly ``` on their own — the count must be even; an odd count means an extra or missing marker crept in somewhere above, and it must be found and fixed before sending, not after.
+
 ## Instructions
 
 **Every step below is mandatory and runs in order — never skip, merge, reorder, or shortcut a step for any reason, even if the outcome seems obvious, low-risk, or already covered by an earlier step.** The only exceptions are the specific skip conditions written into individual steps themselves (e.g., Steps 2/3/9 when there are no uncommitted changes, below) — nothing else justifies skipping one.
