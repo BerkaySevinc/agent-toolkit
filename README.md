@@ -75,7 +75,7 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 
 | Skill | What it does |
 |---------|---------------|
-| `/merge-pilot` | Proposes how to organize your uncommitted changes into clean commits, then creates them once you approve — complete with a ready-to-use PR description. Can then optionally sync the branch with its target, resolving conflicts along the way. Never pushes |
+| `/merge-pilot` | Proposes how to organize your uncommitted changes into clean commits, then creates them once you approve — complete with a ready-to-use PR description. Unrelated changes can be split into separate branches. Can then optionally sync each branch with its target (resolving conflicts along the way), push it, and open the PR/MR using your existing GitHub, GitLab, or Azure DevOps login — every step only after its own approval. Never force-pushes |
 
 <br>
 
