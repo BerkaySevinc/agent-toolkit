@@ -713,6 +713,10 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
   ```
   <mr-description>
   ```
+
+  &nbsp;
+
+  If Step 14's push output gave a create-PR/MR link for this branch: heading `### 🔗 Open the PR/MR on the host`, then that URL alone on one plain line, exactly as the host printed it (never fenced). Omit this sub-heading entirely if there's no such link (nothing was pushed, or the host printed none — GitHub, for one, only prints it when the branch is first created on the remote).
 - **Continue immediately to Step 16 in the same turn — never stop, pause, or wait here.**
 
 ### Step 16 — Stop
