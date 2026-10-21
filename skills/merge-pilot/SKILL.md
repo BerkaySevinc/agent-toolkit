@@ -1,5 +1,5 @@
 ---
-description: Analyzes uncommitted changes and proposes how to split/organize them into commits with best-practice messages, determines the correct merge target, and writes the MR/PR title/description. Reports the plan first — creates the commits (and branch, if needed) only after explicit approval, then separately offers to sync the branch with its target (fast-forward, rebase, or merge), resolving conflicts and any detected semantic risks along the way, each gated behind its own approval. Only at the very end, once everything else is settled, does it offer to push — and only after its own explicit approval there; force-push is never used, under any circumstance. If the push succeeds and already-existing access to GitHub, GitLab, or Azure DevOps is detected, it then separately offers to open the PR/MR too, using only pre-existing access — never requesting or storing new credentials.
+description: Analyzes uncommitted changes and proposes how to split/organize them into commits with best-practice messages, determines the correct merge target, and writes the PR/MR title/description. Reports the plan first — creates the commits (and branch, if needed) only after explicit approval, then separately offers to sync the branch with its target (fast-forward, rebase, or merge), resolving conflicts and any detected semantic risks along the way, each gated behind its own approval. Only at the very end, once everything else is settled, does it offer to push — and only after its own explicit approval there; force-push is never used, under any circumstance. If the push succeeds and already-existing access to GitHub, GitLab, or Azure DevOps is detected, it then separately offers to open the PR/MR too, using only pre-existing access — never requesting or storing new credentials.
 argument-hint: [optional: focus area, e.g. "only look at src/"]
 disable-model-invocation: true
 allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git ls-files:*), Bash(git ls-remote:*), Bash(git remote:*), Bash(git merge-base:*), Bash(git rev-list:*), Bash(git cherry:*), Bash(git config:*), Bash(git for-each-ref:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git apply:*), Bash(git fetch:*), Bash(git rebase:*), Bash(git merge:*), Bash(git reset:*), Bash(git rm --cached:*), Bash(git merge-tree:*), Bash(git worktree:*), Bash(git push:*), Bash(gh auth status:*), Bash(gh pr create:*), Bash(glab auth status:*), Bash(glab mr create:*), Bash(az account show:*), Bash(az repos pr create:*), Bash(npm install --package-lock-only --ignore-scripts:*), Bash(pnpm install --lockfile-only:*), Bash(yarn install --ignore-scripts:*), Bash(bundle lock:*), Bash(poetry lock:*), Read, Edit, AskUserQuestion
@@ -24,7 +24,7 @@ Arguments can narrow scope (e.g. "only look at src/") or override any derived/de
 - Staged and unstaged diff (rename-aware): !`git diff --find-renames HEAD 2>/dev/null || git diff --find-renames 2>/dev/null`
 - Recent commit history (for style/convention reference): !`git log --oneline -20 2>/dev/null || echo "No commits yet"`
 - Default branch guess: !`git rev-parse --abbrev-ref origin/HEAD 2>/dev/null || echo "unknown"`
-- MR/PR template files, if any: !`git ls-files -- .gitlab/merge_request_templates .github/PULL_REQUEST_TEMPLATE.md .github/PULL_REQUEST_TEMPLATE 2>/dev/null || echo "none found"`
+- PR/MR template files, if any: !`git ls-files -- .gitlab/merge_request_templates .github/PULL_REQUEST_TEMPLATE.md .github/PULL_REQUEST_TEMPLATE 2>/dev/null || echo "none found"`
 - Committer name (git config): !`git config user.name 2>/dev/null || echo "not set"`
 - Committer email (git config): !`git config user.email 2>/dev/null || echo "not set"`
 
@@ -34,9 +34,9 @@ Act as a world-class, professional software engineer with deep git best-practice
 
 ## Language
 
-All output — prose, commit messages, branch names, MR title/description — is in English, matching this repo's own derived convention where applicable, or $ARGUMENTS if it specifies otherwise.
+All output — prose, commit messages, branch names, PR/MR title/description — is in English, matching this repo's own derived convention where applicable, or $ARGUMENTS if it specifies otherwise.
 
-Emojis appear only where a step's template literally shows one in a heading — never anywhere else (no decorating prose, notes, commit messages, or the MR description body).
+Emojis appear only where a step's template literally shows one in a heading — never anywhere else (no decorating prose, notes, commit messages, or the PR/MR description body).
 
 Every fenced block is opened and closed in matched pairs — a single stray or missing ``` anywhere in a response flips the parity for everything rendered after it, silently breaking every heading, list, and fence beyond that point with no visible error. Before sending any response that contains a fenced value, count the lines that are exactly ``` on their own — the count must be even; an odd count means an extra or missing marker crept in somewhere above, and it must be found and fixed before sending, not after.
 
@@ -64,7 +64,7 @@ Steps 1-7 are analysis only — nothing is rendered until the Branch Plan (right
   - **Abort and start fresh** — run `git rebase --abort` or `git merge --abort` (matching whichever is in progress), then continue immediately to Step 1 in the same turn — never stop, pause, or wait here.
   - **Leave it alone** — stop immediately, nothing runs.
 
-**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 New Commits (0)`, no commit blocks), and omit the Summary section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the Summary section's **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, both the `# 🔀 Merge Request` and `# 📋 Summary` sections are omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
+**If there are no uncommitted changes at all** (staged, unstaged, or untracked — check the Context's repo status/diff first, before Step 2): there's nothing new to group, message, or offer committing. Skip Steps 2, 3, and 9. State this plainly (`# 📝 New Commits (0)`, no commit blocks), and omit the Summary section's **New commits** list entirely (Step 8's template) — nothing was proposed or created this run. If Step 5 finds prior committed work on this branch, it still shows in the Summary section's **Existing commits** list with its own independent count, unrelated to the `(0)` above. Still run Steps 1, 4-8 in that case; if there's no prior work either, both the `# 🔀 PR/MR Details` and `# 📋 Summary` sections are omitted (Step 8's both-empty rule) and the report is brief. Either way, still check Step 11 — a clean working tree doesn't mean there's nothing to sync.
 
 ### Step 1 — Check whether HEAD is on a protected/mainline branch, or detached
 
@@ -89,12 +89,12 @@ Steps 1-7 are analysis only — nothing is rendered until the Branch Plan (right
 - Messages are imperative and concise (`fix: resolve null pointer in user service`, not `fixed a bug`).
 - Add a body only when the diff's "why" isn't self-evident (non-obvious root cause, multi-file reason, side effects/breaking changes). Trivial changes (typos, renames, formatting, version bumps, obvious one-liners) stay subject-only.
 - Every changed file is accounted for across the commits (split files per Step 2 across their specific commits).
-- Also give each commit a short, human-friendly **Title** — the descriptive part of the subject, first letter capitalized, with any type prefix stripped if the message has one (message `fix: resolve null pointer in booking status lookup` → Title `Resolve null pointer in booking status lookup`; a message that was already prefix-less to begin with just becomes its own Title, capitalized). Display-only (commit headings, MR summary list) — never replaces the actual commit message.
+- Also give each commit a short, human-friendly **Title** — the descriptive part of the subject, first letter capitalized, with any type prefix stripped if the message has one (message `fix: resolve null pointer in booking status lookup` → Title `Resolve null pointer in booking status lookup`; a message that was already prefix-less to begin with just becomes its own Title, capitalized). Display-only (commit headings, PR/MR summary list) — never replaces the actual commit message.
 - **Continue immediately to Step 4 in the same turn — never stop, pause, or wait here.**
 
-### Step 4 — Determine the actual MR/PR target branch
+### Step 4 — Determine the actual PR/MR target branch
 
-The repo's default branch isn't necessarily the real MR target (e.g. default `main`, real target `develop`; or this branch is stacked on another feature branch). Determine the actual target:
+The repo's default branch isn't necessarily the real PR/MR target (e.g. default `main`, real target `develop`; or this branch is stacked on another feature branch). Determine the actual target:
 
 - If $ARGUMENTS names a target, use it, skip the rest.
 - **If HEAD is on a protected/mainline branch** (Step 1): skip Step 5 (no prior pushed commits exist yet) and resolve the target here instead of the distance algorithm below:
@@ -157,11 +157,11 @@ Decide **now**, before Step 6/7 run — this is the only place this question is 
 - **Keep everything on one branch**: ignore the clustering — treat every cluster's commits as one combined New Commits list and continue to Step 6 **once, combined**, exactly as it's written below; proceed through Step 7 and Step 8 normally from there.
 - **Decline**: stop immediately — nothing is created, this stays advisory-only, same as declining Step 9.
 
-### Step 6 — Write the MR/PR title and description
+### Step 6 — Write the PR/MR title and description
 
 - Title and Description share one source: Step 5's surviving prior commits (if any) **plus** this run's new commits (Steps 2-3) — never just one side.
-- If an MR/PR template file exists in context, `Read` it and fill its own sections (don't invent a layout). Otherwise, use a standard structure: `## Summary` (what and why — draw from each commit's subject and body, filling gaps with diff inference where the message alone doesn't explain it), `## Changes` (one bullet per commit/logical concern, written for a reviewer — not the raw subject copy-pasted, never a file dump), `## Testing` (only if something is inferable from the diff; omit rather than invent if nothing is).
-- Title: one line, synthesizing the overall purpose across **all** commits in scope (Step 5's surviving prior + this run's new) — never any single commit's subject copied verbatim. If one concern is clearly primary (the reason this branch/PR exists) and the rest are supporting/minor, lead with the primary one; if several concerns carry equal weight, name the common theme rather than picking one arbitrarily or concatenating subjects. Apply this repo's own derived convention (Step 3) to this synthesized line too — a prefix if that's genuinely this repo's pattern, none if the repo's own commits are consistently prefix-less; merge strategy isn't visible locally, so matching the repo's real style, whichever it is, is the safe default — never Conventional Commits' prefixes forced onto a repo that doesn't actually use them. **This Title is synthesized fresh, separately from Step 3's per-commit Title** (which is always prefix-stripped, display-only, one per commit) — never copy a per-commit Title verbatim into this MR Title; decide independently, from this repo's convention, whether a prefix belongs on this line. $ARGUMENTS overrides style.
+- If an PR/MR template file exists in context, `Read` it and fill its own sections (don't invent a layout). Otherwise, use a standard structure: `## Summary` (what and why — draw from each commit's subject and body, filling gaps with diff inference where the message alone doesn't explain it), `## Changes` (one bullet per commit/logical concern, written for a reviewer — not the raw subject copy-pasted, never a file dump), `## Testing` (only if something is inferable from the diff; omit rather than invent if nothing is).
+- Title: one line, synthesizing the overall purpose across **all** commits in scope (Step 5's surviving prior + this run's new) — never any single commit's subject copied verbatim. If one concern is clearly primary (the reason this branch/PR exists) and the rest are supporting/minor, lead with the primary one; if several concerns carry equal weight, name the common theme rather than picking one arbitrarily or concatenating subjects. Apply this repo's own derived convention (Step 3) to this synthesized line too — a prefix if that's genuinely this repo's pattern, none if the repo's own commits are consistently prefix-less; merge strategy isn't visible locally, so matching the repo's real style, whichever it is, is the safe default — never Conventional Commits' prefixes forced onto a repo that doesn't actually use them. **This Title is synthesized fresh, separately from Step 3's per-commit Title** (which is always prefix-stripped, display-only, one per commit) — never copy a per-commit Title verbatim into this PR/MR Title; decide independently, from this repo's convention, whether a prefix belongs on this line. $ARGUMENTS overrides style.
 - **Continue immediately to Step 7 in the same turn — never stop, pause, or wait here.**
 
 ### Step 7 — Judge whether the branch name fits
@@ -217,7 +217,7 @@ Continuing is only possible at all if HEAD is not on a protected/mainline branch
 
 **Rename check, continuing cluster only** (forking clusters never have an existing name, so this never applies to them; and the continuing cluster can never be on mainline/detached — that's already excluded by the "which cluster continues" rule above — so this is always the naming-only case): same mechanism as the single-branch version — skip entirely unless the continuing cluster's own naming fit-check above found an ISSUE. If it did, `AskUserQuestion` is **always** asked (check whether already pushed first, same as the single-branch version, only to know whether to add the remote-cleanup disclosure to the question — never to decide whether to ask at all): keep the current name (ISSUE resolved, no rename) or rename to the suggested name.
 
-**Render a simple overview first** — lightweight, no commit messages, no files, no Merge Request content, no Committer; just enough to judge whether the split itself makes sense. Same rendering conventions as Step 8: headings shown here as inline code are real markdown headings, never fenced; before every `###`-level line and between blocks, insert a blank line, then a line containing only `&nbsp;`, then another blank line.
+**Render a simple overview first** — lightweight, no commit messages, no files, no PR/MR content, no Committer; just enough to judge whether the split itself makes sense. Same rendering conventions as Step 8: headings shown here as inline code are real markdown headings, never fenced; before every `###`-level line and between blocks, insert a blank line, then a line containing only `&nbsp;`, then another blank line.
 
 Heading `# 🌿 Branch Plan (<K> branches)` — no leading `---`, this is the first thing rendered this run. Directly below, blank + `&nbsp;` + blank, then heading `### 🎯 Assumed target`, then its own fence with the pinned target — shown **once here**, the same for every cluster (forking clusters all fork from it; the continuing cluster's own note already explains why it doesn't). This doesn't replace each cluster's own Assumed target inside its full render later — that's still shown there too, self-contained. If Step 2 excluded any files as likely secrets, add one plain line right after (omit entirely if none): `Excluded (possible secrets — review manually): <file1>, <file2>` — shown **once here only**, never repeated per cluster, since these files were excluded before clustering and don't belong to any one cluster.
 
@@ -227,11 +227,11 @@ No question here — "Use the suggested split" was already chosen at the branch-
 
 For each cluster —
 
-- **Render this cluster's own Branch, New Commits, Merge Request, and Committer** — the Branch section is brought back just for this per-cluster render (unlike the single-branch case, where Branch Plan sits immediately before Step 8 and repeating it would be redundant; here, each cluster's full render happens much later, in its own separate approval turn, so it needs to stand on its own). By this point the destination is already a settled fact (decided back at the rename check, before Branch Plan even rendered) — so this is never an unresolved Current/Suggested choice, just one final name:
+- **Render this cluster's own Branch, New Commits, PR/MR, and Committer** — the Branch section is brought back just for this per-cluster render (unlike the single-branch case, where Branch Plan sits immediately before Step 8 and repeating it would be redundant; here, each cluster's full render happens much later, in its own separate approval turn, so it needs to stand on its own). By this point the destination is already a settled fact (decided back at the rename check, before Branch Plan even rendered) — so this is never an unresolved Current/Suggested choice, just one final name:
   - Heading `# <✅ or ⚠️> Branch (<i> of <K>)` — the `(<i> of <K>)` is part of the heading text itself, not a separate line. **✅** if this cluster's name was always fine, or the rename check resolved to rename. **⚠️** if the rename check resolved to "keep the current name" despite a real mismatch (same rule as Summary's own ✅/⚠️).
   - Then, on its own line, the one final branch name in its own fence (never a Current/Suggested split — there's nothing left unresolved to show two states for).
   - **If a rename actually happened**: right after the fence, one italic line: `*(`<old-name>` → `<current-name>`)*`. **If "keep the current name" was chosen despite a mismatch**: `*(kept as-is despite the naming mismatch — an explicit choice)*`. Omit entirely if this cluster's name was always fine.
-  - Then, exactly as Step 8 describes, in full, every emoji/fence/spacing rule included, nothing abbreviated: New Commits, Merge Request, Committer — using this cluster's own per-cluster title/description/name from above (and, for the continuing cluster, its own Existing commits too, per Step 6's own rule) — except the excluded-secrets line, which was already shown once in the overview above and is never repeated here.
+  - Then, exactly as Step 8 describes, in full, every emoji/fence/spacing rule included, nothing abbreviated: New Commits, PR/MR, Committer — using this cluster's own per-cluster title/description/name from above (and, for the continuing cluster, its own Existing commits too, per Step 6's own rule) — except the excluded-secrets line, which was already shown once in the overview above and is never repeated here.
   - Before this cluster's whole block (including the very first): `---`, then a blank line, then go straight to the `# <✅ or ⚠️> Branch (<i> of <K>)` heading above.
 - `AskUserQuestion` (same role as Step 9, scoped to just this one branch): ask whether to create this branch's commit(s) exactly as shown — locally only, no push yet.
   - **Declined**: this branch is not created — move on to the next cluster (if any); nothing else about this one happens.
@@ -244,10 +244,10 @@ For each cluster —
 
 **Once every cluster has been gone through** (whether approved or declined):
 - **Only once, after the last cluster** (never earlier — a not-yet-processed cluster's still-uncommitted files would otherwise get mistaken for unexpected leftovers): run Step 10's leftover check once, globally. "Expected" here is the union of: every applied cluster's committed files, Step 2's excluded-secret files, any split file that failed hunk verification in any applied cluster (same as Step 10's own definition) — **plus** every declined cluster's files (deliberately left uncommitted — expected to remain exactly as they were, not a surprise). Only flag something as an unexpected leftover if it matches none of these. Attach any finding to the last **applied** cluster's Summary above; skip this check entirely if none were applied.
-- **Publish phase — only if at least one branch was created** (if every cluster was declined, report plainly that nothing was created and go to Step 16). Steps 11-15 run for the created branches, in the fixed processing order, as written for a single branch — "the current branch" means the branch being handled, "this run's commits" (and Step 12's "Step 10's commits" / Context diff) means that cluster's own commits and diff only, never the other clusters' (its own Title/Description from above; for the continuing cluster, its Existing commits too). Target and `<target-remote>` are Step 4's, never re-derived (if there's no `<target-remote>`, disclose that once and skip part 1 for every branch). Every `#`-level heading Steps 12-15 render here (Sync Plan, Sync Result, the MR recap) gets `(Branch <i> of <K>: <branch-name>)` appended to its heading text, same pattern as `# 📋 Summary`'s. Three parts:
+- **Publish phase — only if at least one branch was created** (if every cluster was declined, report plainly that nothing was created and go to Step 16). Steps 11-15 run for the created branches, in the fixed processing order, as written for a single branch — "the current branch" means the branch being handled, "this run's commits" (and Step 12's "Step 10's commits" / Context diff) means that cluster's own commits and diff only, never the other clusters' (its own Title/Description from above; for the continuing cluster, its Existing commits too). Target and `<target-remote>` are Step 4's, never re-derived (if there's no `<target-remote>`, disclose that once and skip part 1 for every branch). Every `#`-level heading Steps 12-15 render here (Sync Plan, Sync Result, the PR/MR recap) gets `(Branch <i> of <K>: <branch-name>)` appended to its heading text, same pattern as `# 📋 Summary`'s. Three parts:
   1. **Sync, per branch**: `git checkout <branch>` (skip if already on it), then Steps 11-13 as written — Step 11 fetches again for every branch, so a target that moved partway through the run is caught. Differences: (a) Step 11's "target has moved" test is judged per branch, not "beyond what Step 4 saw" (an earlier branch's fetch may already have advanced the ref): `git merge-base --is-ancestor <target-remote>/<target> HEAD` succeeds → this branch already contains the target's tip, nothing to sync, render nothing for it; fails → continue as Step 11 says. (b) If Step 11's rebase-vs-merge decision is rebase and `git status --untracked-files=no --short` lists modified tracked files (a declined cluster's, a left-out secret's, a split file awaiting manual staging), skip the sync before asking anything and say so in one line — git refuses to rebase over them. (c) Step 13 renders only `# 🏁 Sync Result`, not the Summary again (already shown when this branch was committed); when the sync was skipped for a reason (fetch failed, or (b)), its one plain line is `Sync skipped: <reason>.` instead of the `Synced with ...` line. A decline in Step 11 or 12 **holds this branch back** from parts 2 and 3 (no push, no PR/MR, no recap) — it never ends the whole run. If checkout fails because of leftover uncommitted files, report git's error plainly, skip that branch's sync, and keep it for parts 2 and 3. If a branch is left mid-rebase/merge for manual resolution, stop the sync loop there (git can't switch branches mid-operation) and hold that branch back; parts 2 and 3 still run for the branches already handled, and the report gives the resume path plus every branch not yet handled, to re-run this command on each.
-  2. **Push, once**: after part 1, one `AskUserQuestion` offering every branch not held back that has something to push — Step 14's own determination (what, which remote, new vs. existing upstream, commit count) applied per branch, naming each branch explicitly since HEAD may be elsewhere (`<branch>@{u}`, `<branch>@{u}..<branch>`); each option states exactly that. Multi-select; one branch → plain yes/no; more than 4 → several questions of up to 4 each in one call (options are capped at 4 per question); selecting none means decline. Push each approved branch with the branch named explicitly: `git push -u <remote> <branch>` (no upstream yet) or `git push <upstream's-remote> <branch>` (existing upstream). Never force; a rejected push is reported plainly and doesn't stop the others. Branches not selected, or with no remote, carry "push declined" / "no remote" into part 3.
-  3. **PR/MR, per branch**: Step 15 as written for each branch not held back — pushed ones get the offer, the rest get the MR recap with their reason (a branch with nothing to push gets nothing, as in Step 15). Detect the host and CLI access once per distinct pushed-to remote and reuse it for the branches that share it (a fork workflow can split them across remotes). `gh`/`glab`/`az` already name the source branch explicitly, so no checkout is needed; each branch uses its own Title/Description.
+  2. **Push, once**: after part 1, one `AskUserQuestion` offering every branch not held back that has something to push — Step 14's own determination (what, which remote, new vs. existing upstream, commit count) applied per branch, naming each branch explicitly since HEAD may be elsewhere (`<branch>@{u}`, `<branch>@{u}..<branch>`); each option states exactly that. Multi-select; one branch → plain yes/no; more than 4 → several questions of up to 4 each in one call (options are capped at 4 per question); selecting none means decline. Push each approved branch with the branch named explicitly: `git push -u <remote> <branch>` (no upstream yet) or `git push <upstream's-remote> <branch>` (existing upstream). Never force; a rejected push is reported plainly and doesn't stop the others. Branches not selected, or with no remote, carry "push declined" / "no remote" into part 3; each pushed branch carries its own create-PR/MR link from its push output (Step 14), if the host printed one.
+  3. **PR/MR, per branch**: Step 15 as written for each branch not held back — pushed ones get the offer, the rest get the PR/MR recap with their reason (a branch with nothing to push gets nothing, as in Step 15). Detect the host and CLI access once per distinct pushed-to remote and reuse it for the branches that share it (a fork workflow can split them across remotes). `gh`/`glab`/`az` already name the source branch explicitly, so no checkout is needed; each branch uses its own Title/Description.
 - Report plainly: `<M> branch(es) created: <name-1>, <name-2>, ... — currently on <the branch HEAD is on now>.` (`<M>` may be fewer than `<K>` if any cluster was declined.)
 - Continue immediately to Step 16 — stop.
 
@@ -257,9 +257,9 @@ Follow this structure exactly — same headings, order, and labels; only the bra
 
 **Two kinds of elements below, never confuse them:**
 - **Headings**, shown here as inline code like `### 🏷️ Title` — render these as **real markdown headings** in your actual output, never inside a fenced code block.
-- **Fenced values**, shown here inside an actual ``` code block — render these **inside a real fenced code block** in your actual output, exactly as shown. Only five things ever get a fence: the current/suggested branch name, the target branch name, each commit's message, the MR title, and the MR description. Nothing else is ever fenced — not headings, not the file list, not the commit lists.
+- **Fenced values**, shown here inside an actual ``` code block — render these **inside a real fenced code block** in your actual output, exactly as shown. Only five things ever get a fence: the current/suggested branch name, the target branch name, each commit's message, the PR/MR title, and the PR/MR description. Nothing else is ever fenced — not headings, not the file list, not the commit lists.
 
-**Spacing:** two different separators, don't mix them up. Between the four **main** (`#`-level) sections — New Commits, Merge Request, Committer, Summary — use `---` as before. Before every **sub**-heading (every `###`-level line shown here as inline code, e.g. `### 🏷️ Title`) and between commit blocks, instead insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly in this output, `&nbsp;` on its own line is what actually produces visible breathing room.
+**Spacing:** two different separators, don't mix them up. Between the four **main** (`#`-level) sections — New Commits, PR/MR, Committer, Summary — use `---` as before. Before every **sub**-heading (every `###`-level line shown here as inline code, e.g. `### 🏷️ Title`) and between commit blocks, instead insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly in this output, `&nbsp;` on its own line is what actually produces visible breathing room.
 
 **Copy-paste hygiene** (for the five fenced values): each gets its own fence, without exception, even a single short line — no blank line before or after the content. A multi-line message (subject, blank line, body) is still **one single fence** — the blank line between subject and body is part of the content, not a fence boundary; never close the fence there and let the body spill out as plain text below it. Example — heading `### Message` (real heading), then the message in its own fence:
 
@@ -292,11 +292,11 @@ then plain text `Files (<N>):` followed by a plain list — never fenced:
 
 Filenames in this list are filenames only, no path (add minimal parent folder only to disambiguate same-name files in different folders).
 
-After the last commit block, `---`, then the Merge Request section, then `---`, then the Committer section, then `---`, then the Summary section — **the Summary template is what Steps 10 and 13 reuse when they re-render later; the Merge Request and Committer sections themselves render once here and are never repeated** (the one exception: Step 15's MR recap re-renders the Merge Request section when no PR/MR was opened).
+After the last commit block, `---`, then the PR/MR section, then `---`, then the Committer section, then `---`, then the Summary section — **the Summary template is what Steps 10 and 13 reuse when they re-render later; the PR/MR and Committer sections themselves render once here and are never repeated** (the one exception: Step 15's PR/MR recap re-renders the PR/MR section when no PR/MR was opened).
 
-**If both New commits and Existing commits counts are 0** (nothing new to propose and nothing prior found), there's no actual merge request to describe — omit **both** the `# 🔀 Merge Request` and `# 📋 Summary` sections entirely, headings and all — a title/description for a non-existent PR isn't useful, and a summary of nothing isn't either.
+**If both New commits and Existing commits counts are 0** (nothing new to propose and nothing prior found), there's no actual PR/MR to describe — omit **both** the `# 🔀 PR/MR Details` and `# 📋 Summary` sections entirely, headings and all — a title/description for a non-existent PR isn't useful, and a summary of nothing isn't either.
 
-Heading `# 🔀 Merge Request` — this section is **pure MR/PR content only**, exactly what you'd paste into the host's own PR/MR form: no commit lists here.
+Heading `# 🔀 PR/MR Details` — this section is **pure PR/MR content only**, exactly what you'd paste into the host's own PR/MR form: no commit lists here.
 
 Heading `### 🎯 Assumed target`, then its own fence:
 
@@ -313,16 +313,16 @@ If Step 4 needed a judgment-call tiebreak, add: `Note: also equidistant from fea
 Heading `### 🏷️ Title`, then its own fence:
 
 ```
-<mr-title>
+<pr-title>
 ```
 
 Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back — the whole Summary/Changes/Testing markdown goes inside this one block as literal text, not rendered as real headings:
 
 ```
-<mr-description>
+<pr-description>
 ```
 
-Title and Description cover the full change — all commits combined (many git hosts auto-populate the MR/PR description from only the first commit). See Step 6.
+Title and Description cover the full change — all commits combined (many git hosts auto-populate the PR/MR description from only the first commit). See Step 6.
 
 `---`, then heading `# 👤 Committer` (real heading), then plain text, never fenced:
 
@@ -331,7 +331,7 @@ Email: <committer-email>
 
 Copy directly from context — don't alter or guess.
 
-`---`, then heading `# 📋 Summary` — this section recaps **everything from the whole report at a glance**: Branch, both commit lists, the MR fields, and the Committer, all in one place. It's what Steps 10 and 13 re-render in full after later steps run, so the user always has the full picture without scrolling back.
+`---`, then heading `# 📋 Summary` — this section recaps **everything from the whole report at a glance**: Branch, both commit lists, the PR/MR fields, and the Committer, all in one place. It's what Steps 10 and 13 re-render in full after later steps run, so the user always has the full picture without scrolling back.
 
 Heading `### <✅ or ⚠️> Branch`, then the **current** branch name (whatever it actually is at the moment of this render — the newly-created/renamed branch if Step 10 already ran) in its own fence. **✅** if Status was OK all along, or if an ISSUE was actually resolved (a new branch created, or a rename applied). **⚠️** if an ISSUE was knowingly left as-is by explicit choice at the Branch destination check ("keep the current name" despite a naming mismatch, or "commit directly to `<current-name>`" on a protected branch) — the situation the ISSUE flagged still genuinely exists, just accepted on purpose, so it's never quietly shown as fine. Right after the fence, one italic line whenever it applies (omit entirely otherwise, and skip the blank line below too in that case): `*(`<old-name>` → `<current-name>`)*` if a rename actually happened (the fence already has the new name — this line's job is just showing the transition, old on the left, arrow, current on the right), `*(kept as-is despite the naming mismatch — an explicit choice)*` if "keep the current name" was chosen, or `*(a protected branch — commits landing here by explicit choice)*` if "commit directly to `<current-name>`" was chosen for mainline. Whenever this italic line is shown, follow it with the usual real-spacing sequence — a blank line, then a line containing only `&nbsp;`, then another blank line — before `### 🎯 Assumed target` below (a bare blank line alone would collapse invisibly, same rule as everywhere else in this output):
 
@@ -339,7 +339,7 @@ Heading `### <✅ or ⚠️> Branch`, then the **current** branch name (whatever
 <current-branch-name>
 ```
 
-Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no Step 4 notes here, those stay in the Merge Request section above and aren't repeated:
+Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no Step 4 notes here, those stay in the PR/MR section above and aren't repeated:
 
 ```
 <target-branch-name>
@@ -375,16 +375,16 @@ Email: <committer-email>
 Heading `### 🏷️ Title`, then its own fence:
 
 ```
-<mr-title>
+<pr-title>
 ```
 
 Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
 ```
-<mr-description>
+<pr-description>
 ```
 
-- Render the full response in this exact order: New Commits, Merge Request, Committer, Summary — the Branch Plan (Branch info) already rendered just before this step.
+- Render the full response in this exact order: New Commits, PR/MR, Committer, Summary — the Branch Plan (Branch info) already rendered just before this step.
 - **Rendering this output does not end the step — immediately continue to Step 9 in the same turn; never stop, pause, or wait after rendering.**
 
 ### Step 9 — Ask whether to apply the plan
@@ -415,7 +415,7 @@ Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title
   - Commit with the exact message from the plan — subject via `-m`, body (if any) via a second `-m` — no Co-Authored-By trailer, no wording changes.
   - Before committing the next file that was split further down (later hunks of the same file), re-derive its remaining diff from the current state — the file has changed since the last commit.
 - **Once all commits are made, verify nothing was left behind**: run one more `git status --untracked-files=all` and compare against what's expected to still show — Step 2's excluded-secret files, and any split file that failed hunk verification above. Anything else still staged/unstaged/untracked wasn't accounted for by the plan; note it in the final report as an unexpected leftover (don't stop, don't ask — just disclose it).
-- **Re-render the `# 📋 Summary` section in full** — not the Merge Request section, which rendered once in Step 8 and is never repeated — using this template (same as Step 8's Summary — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### 🏷️ Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
+- **Re-render the `# 📋 Summary` section in full** — not the PR/MR section, which rendered once in Step 8 and is never repeated — using this template (same as Step 8's Summary — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### 🏷️ Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
 
   Heading `# 📋 Summary`.
 
@@ -427,7 +427,7 @@ Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title
   <current-branch-name>
   ```
 
-  Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no notes, those live only in Step 8's Merge Request section:
+  Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no notes, those live only in Step 8's PR/MR section:
 
   ```
   <target-branch-name>
@@ -455,13 +455,13 @@ Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title
   Heading `### 🏷️ Title`, then its own fence:
 
   ```
-  <mr-title>
+  <pr-title>
   ```
 
   Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
   ```
-  <mr-description>
+  <pr-description>
   ```
 
   Title and Description are unchanged from Step 8's render unless something here (e.g. a manual-staging fallback) actually changes what's being proposed.
@@ -588,7 +588,7 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
 
 ### Step 13 — Render the final sync report
 
-- **Re-render the `# 📋 Summary` section in full**, once more — not the Merge Request section, which rendered once in Step 8 and is never repeated — using this template (same as Step 8's Summary — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### 🏷️ Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
+- **Re-render the `# 📋 Summary` section in full**, once more — not the PR/MR section, which rendered once in Step 8 and is never repeated — using this template (same as Step 8's Summary — repeated here so it's rendered right at this point, not recalled from a distant definition). Headings shown here as inline code (e.g. `### 🏷️ Title`) are **real markdown headings, never fenced**; only content inside an actual ``` block below gets a real fence in your output. **Spacing**: before every heading, insert a blank line, then a line containing only `&nbsp;`, then another blank line — a plain blank line alone collapses/renders invisibly here, `&nbsp;` on its own line is what actually produces visible breathing room; never use `---`:
 
   Heading `# 📋 Summary`.
 
@@ -600,7 +600,7 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
   <current-branch-name>
   ```
 
-  Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no notes, those live only in Step 8's Merge Request section:
+  Heading `### 🎯 Assumed target`, then **just** its own fence — no `&nbsp;` between Branch and Assumed target, they sit back to back; no squash-check parenthetical, no notes, those live only in Step 8's PR/MR section:
 
   ```
   <target-branch-name>
@@ -626,13 +626,13 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
   Heading `### 🏷️ Title`, then its own fence:
 
   ```
-  <mr-title>
+  <pr-title>
   ```
 
   Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
   ```
-  <mr-description>
+  <pr-description>
   ```
 
   Follow it with the `# 🏁 Sync Result` section — same rendering conventions as the Sync Plan above: headings shown as inline code are real markdown headings, never fenced; before this section's own `#`-level heading use `---`; before each `###`-level sub-heading below, insert a blank line, then a line containing only `&nbsp;`, then another blank line; omit any sub-section that has nothing to show, heading and all.
@@ -662,39 +662,39 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
   - **Nothing to push either way** (no upstream and no local-only commits, or an upstream that's already fully up to date): skip this step entirely — no question, no output.
 - **If there's something to push, determine the remote**:
   - Current branch already has an upstream → push there, no remote to choose.
-  - No upstream yet → use `<target-remote>` from Step 4 if one was found; otherwise `origin` if that remote exists; otherwise there's no remote to push to — skip this step, disclosing that the branch has no configured remote. Remember this outcome as **no remote** — Step 15 uses it for its MR recap.
+  - No upstream yet → use `<target-remote>` from Step 4 if one was found; otherwise `origin` if that remote exists; otherwise there's no remote to push to — skip this step, disclosing that the branch has no configured remote. Remember this outcome as **no remote** — Step 15 uses it for its PR/MR recap.
 - `AskUserQuestion`: state exactly what will happen — the branch, the remote, whether this sets a new upstream or updates an existing one, and how many commits are being pushed — and ask whether to push now.
-  - **Declined** → nothing pushed. Remember this outcome as **push declined** and continue immediately to Step 15 in the same turn (its MR recap) instead of stopping.
+  - **Declined** → nothing pushed. Remember this outcome as **push declined** and continue immediately to Step 15 in the same turn (its PR/MR recap) instead of stopping.
   - **Approved** → run exactly one of:
     - Existing upstream: `git push`
     - No upstream yet: `git push -u <remote> <current-branch>`
   - **Never use `--force`/`--force-with-lease`, under any circumstance.** If the push is rejected (remote has moved ahead, non-fast-forward), report the rejection plainly and stop — don't force, don't retry differently; suggest re-running this command so Steps 11-12 can sync with the target's new state first.
-  - On success, report what was pushed (branch, remote, commit count).
+  - On success, report what was pushed (branch, remote, commit count). If the push output itself contains a link the host printed for creating a PR/MR (e.g. GitHub's `remote: Create a pull request for '<branch>' on GitHub by visiting: <url>`, GitLab's `remote: To create a merge request for <branch>, visit: <url>`), remember that exact URL for Step 15's PR/MR recap — never build or guess one yourself.
 - **Continue immediately to Step 15 in the same turn — never stop, pause, or wait here.**
 
 ### Step 15 — Offer to open a PR/MR
 
-- **The PR/MR offer only happens if Step 14 actually pushed.** If Step 14 was declined, or skipped for no remote, skip the offer and go straight to the **MR recap** below. If it was skipped because there was nothing to push, skip this whole step — no recap either, or it would repeat on every re-run.
+- **The PR/MR offer only happens if Step 14 actually pushed.** If Step 14 was declined, or skipped for no remote, skip the offer and go straight to the **PR/MR recap** below. If it was skipped because there was nothing to push, skip this whole step — no recap either, or it would repeat on every re-run.
 - **Also skip** (no offer, no recap) if the current branch is the same as the target (Step 4) — a PR/MR needs two different branches — or if no target was ever determined.
 - **Detect the hosting platform and whether access already exists in one pass — never obtain, request, or store new credentials, never ask the user to paste a token or API key**: get the pushed-to remote's hostname with `git remote get-url <remote>`, then try, in order:
-  - Hostname is `dev.azure.com` or ends in `.visualstudio.com` → **Azure DevOps**. Check `az account show` — succeeds → already logged in with the Azure CLI (also reflects a service-principal or token-based `az` session). Fails → no access; stop checking, skip the offer (disclose why, then the MR recap).
+  - Hostname is `dev.azure.com` or ends in `.visualstudio.com` → **Azure DevOps**. Check `az account show` — succeeds → already logged in with the Azure CLI (also reflects a service-principal or token-based `az` session). Fails → no access; stop checking, skip the offer (disclose why, then the PR/MR recap).
   - Otherwise, try `gh auth status --hostname <hostname>` → succeeds → **GitHub** (covers both github.com and a GitHub Enterprise Server instance `gh` is already configured for; also reflects a `GH_TOKEN`/`GITHUB_TOKEN` environment token).
   - Otherwise, try `glab auth status --hostname <hostname>` → succeeds → **GitLab** (covers both gitlab.com and a self-managed instance `glab` is already configured for; also reflects a `GITLAB_TOKEN`/`GLAB_TOKEN` environment token).
-  - **None of the above succeeded** → skip the offer — no question, just a plain one-line disclosure of why (host not recognized by any known CLI / recognized but not authenticated), then the MR recap. Never guess at a command for an unrecognized host — only these three platforms are ever supported.
+  - **None of the above succeeded** → skip the offer — no question, just a plain one-line disclosure of why (host not recognized by any known CLI / recognized but not authenticated), then the PR/MR recap. Never guess at a command for an unrecognized host — only these three platforms are ever supported.
 - **If access exists**: `AskUserQuestion` — show the exact Title and Description last rendered (Step 6, unchanged since unless Step 12 revised it), the source branch (current branch) and base branch (Step 4's target), and ask whether to open the PR/MR now.
-  - **Declined** → nothing created; go to the MR recap.
+  - **Declined** → nothing created; go to the PR/MR recap.
   - **Approved** → run exactly one of:
-    - GitHub: `gh pr create --title "<mr-title>" --body "<mr-description>" --base <target> --head <current-branch>`
-    - GitLab: `glab mr create --title "<mr-title>" --description "<mr-description>" --target-branch <target> --source-branch <current-branch>`
-    - Azure DevOps: `az repos pr create --title "<mr-title>" --description "<mr-description>" --source-branch <current-branch> --target-branch <target>` (org/project/repository are auto-detected from the current repo; only pass them explicitly if that detection fails)
-  - On success, report the returned PR/MR URL — no MR recap. On failure, report the error plainly — don't retry with different flags or fall back to any other approach — then the MR recap.
-- **MR recap** — shown after every "no PR/MR was opened" outcome above (no access, command failed, declined, push declined, no remote); never on success, never when this step is skipped entirely, and only if Step 8 rendered a Merge Request section (in the multi-branch path: this branch's own per-branch render). It re-renders that section as the last thing in the output, so the user can paste it into the host's PR/MR form. Same rendering conventions as Step 8 (real headings, never fenced; `---` before the `#` heading; blank line, `&nbsp;`, blank line before each `###` heading). Use the final Title/Description exactly as last rendered (including any Step 12 revision) — never re-derive them:
+    - GitHub: `gh pr create --title "<pr-title>" --body "<pr-description>" --base <target> --head <current-branch>`
+    - GitLab: `glab mr create --title "<pr-title>" --description "<pr-description>" --target-branch <target> --source-branch <current-branch>`
+    - Azure DevOps: `az repos pr create --title "<pr-title>" --description "<pr-description>" --source-branch <current-branch> --target-branch <target>` (org/project/repository are auto-detected from the current repo; only pass them explicitly if that detection fails)
+  - On success, report the returned PR/MR URL — no PR/MR recap. On failure, report the error plainly — don't retry with different flags or fall back to any other approach — then the PR/MR recap.
+- **PR/MR recap** — shown after every "no PR/MR was opened" outcome above (no access, command failed, declined, push declined, no remote); never on success, never when this step is skipped entirely, and only if Step 8 rendered a PR/MR section (in the multi-branch path: this branch's own per-branch render). It re-renders that section as the last thing in the output, so the user can paste it into the host's PR/MR form. Same rendering conventions as Step 8 (real headings, never fenced; `---` before the `#` heading; blank line, `&nbsp;`, blank line before each `###` heading). Use the final Title/Description exactly as last rendered (including any Step 12 revision) — never re-derive them:
 
-  `---`, then heading `# 🔀 Merge Request`, then one plain line: `No PR/MR was opened: <reason>.` — `<reason>` is one of `no supported CLI is signed in for this host` / `the create command failed (see above)` / `you declined` / `you declined the push` / `no remote is configured`.
+  `---`, then heading `# 🔀 PR/MR Details`, then one plain line: `No PR/MR was opened: <reason>.` — `<reason>` is one of `no supported CLI is signed in for this host` / `the create command failed (see above)` / `you declined` / `you declined the push` / `no remote is configured`.
 
   &nbsp;
 
-  Heading `### 🎯 Assumed target`, then **just** its own fence — no squash-check parenthetical, no notes (those live only in Step 8's Merge Request section):
+  Heading `### 🎯 Assumed target`, then **just** its own fence — no squash-check parenthetical, no notes (those live only in Step 8's PR/MR section):
 
   ```
   <target-branch-name>
@@ -705,13 +705,13 @@ Once finalized cleanly (either path): continue immediately in the same turn — 
   Heading `### 🏷️ Title`, then its own fence:
 
   ```
-  <mr-title>
+  <pr-title>
   ```
 
   Heading `### 📄 Description`, then its own fence — no `&nbsp;` between Title and Description, they sit back to back:
 
   ```
-  <mr-description>
+  <pr-description>
   ```
 
   &nbsp;
