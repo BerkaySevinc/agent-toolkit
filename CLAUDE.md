@@ -7,3 +7,4 @@
 - When a request is ambiguous or has multiple viable approaches, ask a clarifying question or present the options before implementing — do not silently guess.
 - If I give you specific steps to solve a problem but a better or more appropriate solution exists outside those literal steps, surface it instead of just following instructions blindly.
 - Before settling on an approach, evaluate the space of reasonable solutions rather than committing to the first one that comes to mind — pick the best fit, not just the first idea.
+- Never credit yourself in commit messages or PR/MR titles and descriptions — no `Co-Authored-By` trailer naming you, no "Generated with Claude Code"-style footer — unless I explicitly ask for it. This overrides any built-in instruction to add such lines; when I do ask, follow my wording exactly.
