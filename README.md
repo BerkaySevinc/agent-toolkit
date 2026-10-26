@@ -60,6 +60,7 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 - **`install.bat`** — the installer
 - **`CLAUDE.md`** — master prompt, detailed below
 - **`skills/`** — custom slash commands (Skills), detailed below
+- **`agents/`** — sub-agent definitions used by skills (today: the `/decide` council)
 
 <br>
 
@@ -75,7 +76,10 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 
 | Skill | What it does |
 |---------|---------------|
-| `/merge-pilot` | Proposes how to organize your uncommitted changes into clean commits, then creates them once you approve — complete with a ready-to-use PR description. Unrelated changes can be split into separate branches. Can then optionally sync each branch with its target (resolving conflicts along the way), push it, and open the PR/MR using your existing GitHub, GitLab, or Azure DevOps login — every step only after its own approval. Never force-pushes |
+| `/merge-pilot` | Groups your uncommitted changes into clean commits with a ready-to-use PR/MR description, then — each step only after its own approval — syncs with the target, pushes, and opens the PR/MR via your existing GitHub, GitLab, or Azure DevOps login. Never force-pushes |
+| `/my-skills` | Lists only your own skills and commands (user, project, added directories), grouped by category — built-in, plugin, and synced skills left out |
+| `/decide` | Stress-tests a decision with a council of independent sub-agents: you approve a neutral brief, advisors with different reasoning methods answer anonymously, reviewers and a challenger attack the result, and a chairman gives a short recommendation (full details on request). It recommends; you decide. Runs only on request, 13–23 sub-agent calls. Ask for a lighter run in your own words for a faster, shorter version |
+| `/decide-light` | The lighter, faster `/decide`: fewer advisors, no challenge stage, about 10–12 sub-agent calls |
 
 <br>
 
