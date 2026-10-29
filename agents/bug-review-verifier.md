@@ -28,12 +28,12 @@ Verdicts:
 
 You may correct the severity (BLOCKER, MAJOR, MINOR) or the type, with a reason. Never raise a severity to be safe. The meaning of the severities: BLOCKER is a wrong result, crash, data loss or security hole in normal use; MAJOR is wrong behavior in a realistic edge case; MINOR is possible but low impact or rare. The types: `LOGIC`, `NULL_EMPTY`, `ERROR_HANDLING`, `RESOURCE`, `CONCURRENCY`, `REGRESSION`, `DATA_TYPE`, `SECURITY`, `INTENT_MISMATCH`, `OTHER: <short name>`.
 
-Output, no preamble, nothing else. For each candidate, in the order given:
+**Keep the report short.** The channel that delivers your report to the caller cuts anything longer than about 1,800 characters, and a cut report loses verdicts. So: one line per candidate, in the order given, and nothing else — no preamble, no summary, no remarks. Each line is:
 
 ```
-CANDIDATE <n>
-VERDICT: CONFIRMED | REFUTED | UNCLEAR
-EVIDENCE: <file:line facts, at most 3 sentences; for REFUTED the citation and why it closes the scenario>
-SEVERITY: unchanged | BLOCKER | MAJOR | MINOR — <reason, if changed>
-TYPE: unchanged | <type> — <reason, if changed>
+<n> | <CONFIRMED|REFUTED|UNCLEAR> | <unchanged|BLOCKER|MAJOR|MINOR> | <unchanged|type> | <evidence>
 ```
+
+The third field is the severity and the fourth the type (`unchanged`, or the corrected value). The evidence is one or two short sentences, at most about 200 characters: the `file:line` facts; for `REFUTED` the citation and why it closes the scenario; and the reason, if you changed the severity or the type. If a candidate duplicates another candidate of your list, say so in the evidence ("duplicate of 3"). When you have more to say, say less.
+
+Finish with a last line `END OF REPORT`. A report without it is treated as cut off.
