@@ -60,7 +60,7 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 - **`install.bat`** — the installer
 - **`CLAUDE.md`** — master prompt, detailed below
 - **`skills/`** — custom slash commands (Skills), detailed below
-- **`agents/`** — sub-agent definitions used by skills (today: the `/decide` council)
+- **`agents/`** — sub-agent definitions used by skills (today: the `/decide` council and the `/bug-review` reviewers)
 
 <br>
 
@@ -80,6 +80,10 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 | `/my-skills` | Lists only your own skills and commands (user, project, added directories), grouped by category — built-in, plugin, and synced skills left out |
 | `/decide` | Stress-tests a decision with a council of independent sub-agents: you approve a neutral brief, advisors with different reasoning methods answer anonymously, reviewers and a challenger attack the result, and a chairman gives a short recommendation (full details on request). It recommends; you decide. Runs only on request, 13–23 sub-agent calls. Ask for a lighter run in your own words for a faster, shorter version |
 | `/decide-light` | The lighter, faster `/decide`: fewer advisors, no challenge stage, about 10–12 sub-agent calls |
+| `/bug-review` | Reviews your changes (or any scope you name: a branch, a commit range, paths, the whole project) for bugs with independent sub-agents that read the code from different angles; every finding is verified before you see it, and you choose which to fix. Reads code only, no security audit. Runs only on request, about 9–20 sub-agent calls; big scopes can be sliced |
+| `/bug-review-light` | The lighter, faster `/bug-review`: a quick scan with two angles and no sweep, about 6–9 sub-agent calls |
+| `/bug-review-branch` | `/bug-review` on everything the current branch added compared with its base branch (commits and uncommitted changes together, like a PR); the base is found from the shared history and shown for you to confirm |
+| `/bug-review-project` | `/bug-review` on the whole project instead of a change; works outside a git repository too, and big projects can be sliced |
 
 <br>
 
