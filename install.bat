@@ -125,7 +125,7 @@ if "!CANCELLED!"=="0" (
                     echo(
                     set "LIST_NEW=!LIST_NEW!;!REL!"
                 ) else (
-                    fc /b "!FULLFILE!" "!DST!" >nul 2>&1
+                    fc "!FULLFILE!" "!DST!" >nul 2>&1
                     if not errorlevel 1 (
                         echo %IND%%C_GRAY%[UNCHANGED]%C_RESET%  %C_WHITE%!REL!%C_RESET%
                         echo(
