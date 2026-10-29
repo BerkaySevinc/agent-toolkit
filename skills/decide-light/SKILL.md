@@ -5,4 +5,4 @@ disable-model-invocation: true
 allowed-tools: Skill
 ---
 
-The user typed `/decide-light`: they asked for the `decide` council in its lighter, faster mode. Invoke the `decide` skill with the Skill tool, passing as its arguments a first line `COUNCIL MODE: FAST` followed, on the next line, by `$ARGUMENTS`. Then follow that skill; do nothing else here.
+The user typed `/decide-light`: they asked for the `decide` council in its lighter, faster mode. Invoke the `decide` skill with the Skill tool, passing as its arguments a first line `COUNCIL MODE: LIGHT` followed, on the next line, by `$ARGUMENTS`. Then follow that skill; do nothing else here.
