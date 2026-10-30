@@ -60,7 +60,9 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 - **`install.bat`** — the installer
 - **`CLAUDE.md`** — master prompt, detailed below
 - **`skills/`** — custom slash commands (Skills), detailed below
-- **`agents/`** — sub-agent definitions used by skills (today: the `/decide` council and the `/bug-review` reviewers)
+- **`agents/`** — sub-agent definitions used by skills (today: the `/decide` council, the `/bug-review` reviewers and the `/vuln-review` reviewers)
+
+> **Maintenance note:** the `bug-review-*` and `vuln-review-*` agents are deliberate copies of one skeleton. When you change a shared part, change it in both. Shared: in the selector, the scope finding, base-branch detection, measuring and slicing; in the lead, the stage flow, the router procedure, merging and the handling of cut-off reports; in the sweeper and the verifier, the short output format and the re-ask rule. Different on purpose: the angles, the finder record fields, the verification criteria, the severity scale, the report sections and the plan-screen texts.
 
 <br>
 
@@ -80,10 +82,14 @@ Pull (or re-download) the latest version and run `install.bat` again — only ne
 | `/my-skills` | Lists only your own skills and commands (user, project, added directories), grouped by category — built-in, plugin, and synced skills left out |
 | `/decide` | Stress-tests a decision with a council of independent sub-agents: you approve a neutral brief, advisors with different reasoning methods answer anonymously, reviewers and a challenger attack the result, and a chairman gives a short recommendation (full details on request). It recommends; you decide. Runs only on request, 13–23 sub-agent calls. Ask for a lighter run in your own words for a faster, shorter version |
 | `/decide-light` | The lighter, faster `/decide`: fewer advisors, no challenge stage, about 10–12 sub-agent calls |
-| `/bug-review` | Reviews your changes (or any scope you name: a branch, a commit range, paths, the whole project) for bugs with independent sub-agents that read the code from different angles; every finding is verified before you see it, and you choose which to fix. Reads code only, no security audit. Runs only on request, about 9–20 sub-agent calls; big scopes can be sliced |
+| `/bug-review` | Reviews your changes (or any scope you name: a branch, a commit range, paths, the whole project) for bugs with independent sub-agents that read the code from different angles; every finding is verified before you see it, and you choose which to fix. Reads code only, no security audit (that is `/vuln-review`). Runs only on request, about 9–20 sub-agent calls; big scopes can be sliced |
 | `/bug-review-light` | The lighter, faster `/bug-review`: a quick scan with two angles and no sweep, about 6–9 sub-agent calls |
 | `/bug-review-branch` | `/bug-review` on everything the current branch added compared with its base branch (commits and uncommitted changes together, like a PR); the base is found from the shared history and shown for you to confirm |
 | `/bug-review-project` | `/bug-review` on the whole project instead of a change; works outside a git repository too, and big projects can be sliced |
+| `/vuln-review` | Reviews your changes (or any scope you name: a branch, a commit range, paths, the whole project) for security vulnerabilities with independent sub-agents that read the code from different angles (injection, access control, secrets, cryptography and more); every finding is checked as a concrete attack before you see it, and you choose which to fix. A separate skill: it does not replace the built-in `/security-review`. Reads code only, no ordinary bug hunt (that is `/bug-review`). Runs only on request, about 10–21 sub-agent calls; big scopes can be sliced |
+| `/vuln-review-light` | The lighter, faster `/vuln-review`: a quick scan with the three core angles and no sweep, about 7–10 sub-agent calls |
+| `/vuln-review-branch` | `/vuln-review` on everything the current branch added compared with its base branch (commits and uncommitted changes together, like a PR); the base is found from the shared history and shown for you to confirm |
+| `/vuln-review-project` | `/vuln-review` on the whole project instead of a change, old weaknesses included; works outside a git repository too, and big projects can be sliced |
 
 <br>
 
