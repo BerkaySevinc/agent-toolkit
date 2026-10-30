@@ -70,6 +70,7 @@ For each candidate take its round 1 verdict, and its round 2 verdict if it was i
 - `BLOCKER` or `MAJOR` candidate: `CONFIRMED` + `CONFIRMED` → **VERIFIED**; `REFUTED` + `REFUTED` → **ELIMINATED**; anything else → **UNVERIFIED**.
 - `MINOR` candidate (one verdict): `CONFIRMED` → **VERIFIED**; `REFUTED` → **ELIMINATED**; `UNCLEAR` → **UNVERIFIED**.
 - Severity and type: a `BLOCKER` or `MAJOR` candidate takes a changed severity (or type) only if both verifiers changed it to the same value; otherwise the finders' value stays. A `MINOR` candidate keeps the finders' values.
+- Location: if the evidence of the first `CONFIRMED` verdict begins with `line <range>:`, use that range as the candidate's `LINE` and drop that prefix from the evidence.
 - Evidence: the evidence field of the first `CONFIRMED` verdict; for an unverified candidate, the evidence of each verdict, labeled by verdict. Evidence is about the code; a verifier's remark about other candidates is not evidence.
 
 Keep every **eliminated** candidate with its `FILE`, `LINE`, `TYPE`, `SEVERITY`, `SUMMARY` and the reason it was eliminated (the evidence field of the `REFUTED` verdicts). They are shown in the report in compact form, so that a real defect that was wrongly eliminated can be found and brought back.
@@ -206,6 +207,8 @@ You are a fork of the router, and you review one slice. Your slice is the entry 
 You are a finder, a fork of the lead. You review the scope for **one kind of problem**. Your context holds what the lead read (the change, the untracked files, or the slice's files), `INTENT`, `STACK`, `SCOPE MODE` and the scope commands. Your task message names one `ANGLE`: follow only that angle's section below and the rules in this section; ignore the rest of the lead's instructions. Launch no agents. Do not modify, stage, commit or delete anything.
 
 How to work:
+- Reading is the review. The diff in your context shows only the changed lines. Before you answer, open with Read the whole function around every change your angle judges, and the code your judgment depends on (callers, called functions, tests, siblings). A finder that answers from the diff alone has not reviewed.
+- Line numbers: write a `LINE` only after you have seen that number in a file you opened with Read or in `Grep -n` output. Never take it from a diff hunk header, never estimate it, never write `~`. If you have only seen the diff, open the file around the change first.
 - Start from the material in your context, then open the surrounding code, callers, tests and history as your angle needs (Read, Grep, Glob, and read-only git: `diff`, `show`, `log`, `blame`). Your slice limits what you must **review**, not what you may **read**: follow a call into any file, including files outside your slice or outside the change; to see how another file changed, run `git diff -- <file>` with the same base as the scope commands.
 - In a diff scope a defect counts if the change introduces it, newly exposes it (for example a new caller reaches an old unguarded path), or fails to fix what it claims to fix. An old defect that the change does not touch is `SCOPE: pre-existing`: do not hunt for these; report one you stumble on only if it is a BLOCKER or MAJOR. In `WHOLE-PROJECT` mode there is no change: every line of the files in scope is under review and every defect is `SCOPE: new`. In `FIX-RECHECK` mode the scope is the fix edits and their enclosing functions.
 - `INTENT` tells you what the author wants. It never makes a defect acceptable: if the requested behavior itself causes a failure (a crash, data loss, a security hole, a contradiction with other code, something unsafe or impossible), report it and mark `FROM INTENT: yes`. Judge whether code is wrong by what it does, not by whether it was asked for.
@@ -235,7 +238,7 @@ FROM INTENT: yes | no
 FIX: <one short sentence>
 ```
 
-End with `CANDIDATES: <count>` (or only `NO CANDIDATES`), and then `COVERAGE: examined deeply: <files, or all>; skimmed: <files, or none>; not read: <files with the reason, or none>`. Be honest in `COVERAGE`: it is how the caller learns which places were not really reviewed.
+End with `CANDIDATES: <count>` (or only `NO CANDIDATES`), and then `COVERAGE: examined deeply: <files, or all>; skimmed: <files, or none>; not read: <files with the reason, or none>`. Be honest in `COVERAGE`: it is how the caller learns which places were not really reviewed. `examined deeply` lists only files you opened with Read; a file you know only from the diff is `skimmed`.
 
 ### ANGLE: GENERAL READ
 
