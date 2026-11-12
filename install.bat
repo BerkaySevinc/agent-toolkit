@@ -83,14 +83,17 @@ if "!CANCELLED!"=="0" (
     echo %IND%%C_YELLOW%Installing agent-toolkit into %CLAUDE_DIR%...%C_RESET%
     echo(
     echo(
+    echo %IND%%C_GRAY%Checking files...%C_RESET%
+    echo(
 )
 
 rem ======================================================================
-rem Mirror every file ("is_dotted", "is_meta_file" and "resolve_file" all
-rem inlined). Destination folders are created lazily, right before the
-rem first file that actually needs them, so a folder with no installable
-rem files in it is never created and never falsely implies a change.
+rem Phase 1 - check every file and remember the result in memory (arrays
+rem ITEM_REL / ITEM_SRC / ITEM_ST, status NEW / SAME / DIFF). Nothing is
+rem printed, copied or asked here; the "Checking files..." line stays up.
+rem ("is_dotted", "is_meta_file" and "resolve_file" are all inlined.)
 rem ======================================================================
+set "N=0"
 if "!CANCELLED!"=="0" (
     for /R "%SCRIPT_DIR%" %%F in (*) do (
         set "FULLFILE=%%F"
@@ -110,43 +113,74 @@ if "!CANCELLED!"=="0" (
                 )
             )
             if "!SKIP!"=="0" (
+                set /a N+=1
                 set /a TOTAL_FOUND+=1
                 set "DST=%CLAUDE_DIR%\!REL!"
+                set "ITEM_REL[!N!]=!REL!"
+                set "ITEM_SRC[!N!]=!FULLFILE!"
                 if not exist "!DST!" (
-                    for %%P in ("!DST!") do set "DSTDIR=%%~dpP"
-                    if not exist "!DSTDIR!" (
-                        mkdir "!DSTDIR!"
-                        set "DSTDIRREL=!DSTDIR:%CLAUDE_DIR%\=!"
-                        echo %IND%%C_GREEN%[DIR]%C_RESET%        %C_WHITE%!DSTDIRREL!%C_RESET%
-                        echo(
-                    )
-                    copy /Y "!FULLFILE!" "!DST!" >nul
-                    echo %IND%%C_GREEN%[NEW]%C_RESET%        %C_WHITE%!REL!%C_RESET%
-                    echo(
-                    set "LIST_NEW=!LIST_NEW!;!REL!"
+                    set "ITEM_ST[!N!]=NEW"
                 ) else (
                     fc "!FULLFILE!" "!DST!" >nul 2>&1
                     if not errorlevel 1 (
-                        echo %IND%%C_GRAY%[UNCHANGED]%C_RESET%  %C_WHITE%!REL!%C_RESET%
-                        echo(
-                        set "LIST_UNCHANGED=!LIST_UNCHANGED!;!REL!"
+                        set "ITEM_ST[!N!]=SAME"
                     ) else (
-                        echo %IND%%C_RED%[CONFLICT]%C_RESET%   %C_WHITE%!REL!%C_RESET% already exists and differs from the repo version.
-                        choice /c YN /n /m "%C_RESET%%IND%            Overwrite with the repo version? (Y = overwrite / N = skip): "
-                        if errorlevel 2 (
-                            <nul set /p ".=%CLR_CONFLICT%"
-                            echo %IND%%C_MAGENTA%[SKIPPED]%C_RESET%    %C_WHITE%!REL!%C_RESET%
-                            echo(
-                            set "LIST_SKIPPED=!LIST_SKIPPED!;!REL!"
-                        ) else (
-                            copy /Y "!FULLFILE!" "!DST!" >nul
-                            <nul set /p ".=%CLR_CONFLICT%"
-                            echo %IND%%C_CYAN%[UPDATED]%C_RESET%    %C_WHITE%!REL!%C_RESET%
-                            echo(
-                            set "LIST_UPDATED=!LIST_UPDATED!;!REL!"
-                        )
+                        set "ITEM_ST[!N!]=DIFF"
                     )
                 )
+            )
+        )
+    )
+)
+
+rem --- Checking is done: remove the "Checking files..." line ---
+if "!CANCELLED!"=="0" (
+    <nul set /p ".=%CLR_CONFLICT%"
+)
+
+rem ======================================================================
+rem Phase 2 - act on the remembered results, which now flow by quickly.
+rem Destination folders are created lazily, right before the first file
+rem that actually needs them, so a folder with no installable files in it
+rem is never created and never falsely implies a change.
+rem ======================================================================
+if "!CANCELLED!"=="0" (
+    for /L %%i in (1,1,!N!) do (
+        set "REL=!ITEM_REL[%%i]!"
+        set "FULLFILE=!ITEM_SRC[%%i]!"
+        set "DST=%CLAUDE_DIR%\!REL!"
+        if "!ITEM_ST[%%i]!"=="NEW" (
+            for %%P in ("!DST!") do set "DSTDIR=%%~dpP"
+            if not exist "!DSTDIR!" (
+                mkdir "!DSTDIR!"
+                set "DSTDIRREL=!DSTDIR:%CLAUDE_DIR%\=!"
+                echo %IND%%C_GREEN%[DIR]%C_RESET%        %C_WHITE%!DSTDIRREL!%C_RESET%
+                echo(
+            )
+            copy /Y "!FULLFILE!" "!DST!" >nul
+            echo %IND%%C_GREEN%[NEW]%C_RESET%        %C_WHITE%!REL!%C_RESET%
+            echo(
+            set "LIST_NEW=!LIST_NEW!;!REL!"
+        )
+        if "!ITEM_ST[%%i]!"=="SAME" (
+            echo %IND%%C_GRAY%[UNCHANGED]%C_RESET%  %C_WHITE%!REL!%C_RESET%
+            echo(
+            set "LIST_UNCHANGED=!LIST_UNCHANGED!;!REL!"
+        )
+        if "!ITEM_ST[%%i]!"=="DIFF" (
+            echo %IND%%C_RED%[CONFLICT]%C_RESET%   %C_WHITE%!REL!%C_RESET% already exists and differs from the repo version.
+            choice /c YN /n /m "%C_RESET%%IND%            Overwrite with the repo version? (Y = overwrite / N = skip): "
+            if errorlevel 2 (
+                <nul set /p ".=%CLR_CONFLICT%"
+                echo %IND%%C_MAGENTA%[SKIPPED]%C_RESET%    %C_WHITE%!REL!%C_RESET%
+                echo(
+                set "LIST_SKIPPED=!LIST_SKIPPED!;!REL!"
+            ) else (
+                copy /Y "!FULLFILE!" "!DST!" >nul
+                <nul set /p ".=%CLR_CONFLICT%"
+                echo %IND%%C_CYAN%[UPDATED]%C_RESET%    %C_WHITE%!REL!%C_RESET%
+                echo(
+                set "LIST_UPDATED=!LIST_UPDATED!;!REL!"
             )
         )
     )
