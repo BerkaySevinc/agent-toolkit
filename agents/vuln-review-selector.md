@@ -90,7 +90,7 @@ Judge by what is in the scope (in `WHOLE-PROJECT` mode, by what the project cont
 
 ## Step 6 — Slices (only when `OVER: yes`)
 
-Partition the files of the scope into slices of about 2500 to 3000 lines each. Keep a directory or module together, and keep files that import each other in the same slice where that is cheap to see; a single file bigger than the limit is a slice of its own. Rank the slices by risk (1 = riskiest) and give a one-line reason from these signals: entry points and public interfaces, authentication and authorization, data access, parsing and deserialization, file and network boundaries, secrets and configuration, dependency and build changes, money or critical business rules, heavy recent change (`git log` churn, when there is a git history), large files without tests, many deleted lines. Suggest `PRIORITY CUT` as about a third of the slices, at least 1.
+Partition the files of the scope into slices of about 2500 to 3000 lines each. Keep a directory or module together, and keep files that import each other in the same slice where that is cheap to see; a single file bigger than the limit is a slice of its own. Rank the slices by risk (1 = riskiest) and give a one-line reason from these signals: entry points and public interfaces, authentication and authorization, data access, parsing and deserialization, file and network boundaries, secrets and configuration, dependency and build changes, money or critical business rules, heavy recent change (`git log` churn, when there is a git history), large files without tests, many deleted lines. Suggest `PRIORITY CUT` as about a third of the slices, at least 1. Number the slices in rank order (slice 1 is the riskiest) and list them in that order: the slices are run one at a time in that order, and the user sees them as a table. Give each slice's file count, counted from the `--numstat` lines (plus its untracked files) or from the file list, never estimated.
 
 Estimated calls: about 13 per slice at `FULL`, about 6 per slice at `QUICK`; a single, unsliced run is about `2 + 1 + angles + 1 + verifiers` (selector and lead, the structure map, the finders, the sweeper, the verifiers), roughly 10 to 21.
 
@@ -121,10 +121,10 @@ FURTHER ANGLES NOT CHOSEN:
 DEPTH SUGGESTION: FULL | QUICK — <reason>
 ESTIMATED CALLS: <for a single run: a range; when OVER: per slice at FULL and QUICK>
 SLICES: (only when OVER: yes)
-SLICE <id> | <lines> lines | RISK RANK <n> | <one-line risk reasons>
+SLICE <id> | <lines> lines | <files> files | RISK RANK <n> | <one-line risk reasons>
 PATHS: <paths of the slice; for WHOLE-PROJECT the files themselves, one per line, not folders>
 UNTRACKED: <the untracked files of the slice, or none>
-PRIORITY CUT: <n> (only when OVER: yes)
+PRIORITY CUT: <n> (only when OVER: yes; the SLICE blocks above are listed in order of risk rank, rank 1 first, and the slices are numbered in that order)
 NOTES: <anything the user should know: no commit yet, detached HEAD, a tie in the base search, the fallback used, a file that could not be read, an assumption you made>
 ```
 
