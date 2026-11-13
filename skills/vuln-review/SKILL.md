@@ -38,26 +38,65 @@ Start directly with the plan; no introductory sentence. Everything on this scree
 - `### 🛡️ <Security context>` — each quote exactly as the `SELECTION` block gives it, with its source (the user's words, a document of the repository, a configuration file), and nothing else: no interpretation, no list of what will be checked. If none was stated: one plain sentence that no context was found, that the review is not affected (the context only helps to judge how serious a finding is), and that the user may type what they know about who uses the system and what is sensitive in the reply.
 - `### 🔎 <Angles>` — three groups, each a bold label on its own line followed by a bullet list, never a paragraph; the labels are translated and carry no emoji. Every bullet is `- **NAME** — short phrase`: the name exactly as it is and never translated, the phrase in the user's language. Group 1, **Core angles**: what each one looks for (`GENERAL SECURITY READ` looks at everything as an attacker would; the others each look at one class of weakness). Group 2, **Chosen further angles**: why each was chosen. Group 3, **Further angles not chosen**: why each was not. A group with no entry is left out (group 1 never is). In LIGHT mode, or when the depth is `QUICK`, the groups are instead: **Angles that will run** (the core angles), **Chosen further angles that will not run in this quick scan**, **Further angles not chosen**.
 - `### ⚡ <Depth>` — only if the mode is LIGHT or the selector suggested `QUICK`: one sentence on what a quick scan is (the three core angles, no sweep; in a fix re-check also the check that each fix closes its attack and cannot be bypassed) and why it runs, and that the user can choose the full review in the question below. The `DEPTH SUGGESTION: FULL` of the `SELECTION` block is only the default, not advice: never present it as a recommendation, and never say that a selector or any sub-agent suggested anything (only when it says `QUICK` explain the reason, as "the quick scan is enough here because …"). In FULL mode with no suggestion, still show the section, as two plain sentences: that the full review will run (about 10–21 calls; for a sliced scope the depth is asked next), and that the user can choose the lighter, quicker review in the question below.
-- `### 📝 <Notes>` — always: one plain line that by default the review leaves out denial of service, resource exhaustion and missing rate limiting, known-vulnerable library versions, and a few other categories that rarely lead to an exploitable weakness (the report counts what fell into them), and that the user can ask in the reply to include any of them; the categories the user already asked to include (`LIFTED EXCLUSIONS`, when not `none`); anything in `NOTES` that the user should know; and, when the user named a model, one plain line that the review runs on that model.
+- `### 🤖 <Model>` — always: one plain line saying which model the review runs on. If the user named a model, that one ("on <model>, as you asked"); otherwise the model of this session, named from what you know about yourself ("on the model of this session, <name>"); if you do not know its name, just "on the model of this session". The user can change it in the reply.
+- `### 📝 <Notes>` — always: one plain line that by default the review leaves out denial of service, resource exhaustion and missing rate limiting, known-vulnerable library versions, and a few other categories that rarely lead to an exploitable weakness (the report counts what fell into them), and that the user can ask in the reply to include any of them; the categories the user already asked to include (`LIFTED EXCLUSIONS`, when not `none`); and anything in `NOTES` that the user should know.
 
 Then a line `---` and a **box** with the question, translated: "Do you approve, or is there anything you want to change or add?" Two options: **Approve** (run the review as shown), and the other mode — in FULL mode **Lighter review** (a quick scan: the three core angles, no sweep), in LIGHT mode **Full review**. Choosing the other mode switches the mode and counts as the approval. Corrections come in "Other". Nothing follows the box.
 
-**Corrections.** Angles added or removed → change the lists, and show only the lines that changed. A different review model, or none → change it and show only the Notes line about it. A category added to the review → run Step 1 again with the original scope request plus the user's words and show the new plan. A different or narrower scope (also when the user says so in the reply) → run Step 1 again with the new scope request (the original plus the user's words) and show the new plan. Security context given in the reply → add it, verbatim, to the context and show only the changed section. Approval → when `OVER: yes`, go on with Step 2b; otherwise with Step 3. Do not ask a second time unless a correction changes the scope.
+**Corrections.** Angles added or removed → change the lists, and show only the lines that changed. A different review model, or none → change it and show only the Model section. A category added to the review → run Step 1 again with the original scope request plus the user's words and show the new plan. A different or narrower scope (also when the user says so in the reply) → run Step 1 again with the new scope request (the original plus the user's words) and show the new plan. Security context given in the reply → add it, verbatim, to the context and show only the changed section. Approval → when `OVER: yes`, go on with Step 2b; otherwise with Step 3. Do not ask a second time unless a correction changes the scope.
 
 ### Step 2b — Large scope (only when `OVER: yes`, right after the plan is approved)
 
-A screen of its own, with only this on it: a line `---` and the heading `# ⚠️ <Large scope>`; one plain paragraph: the scope is N lines, more than one reviewer can read carefully (about 3000); if it is split it becomes K parts (K from the `SLICES` block) that are reviewed **one at a time, in the order of the table below, the riskiest first**, so the whole run takes about K times as long as a normal one. Then, before the sub-heading a blank line, a line containing only `&nbsp;`, and a blank line, `### 🧩 <Slices>` with a table: one row per slice, in the order of the `SLICES` block (risk rank 1 first), with the columns `#` (its number), `Lines`, `Files` (its file count), `Why it is risky` (a few words), and `Main folders` (folder names only, at most 4, then "+N"). Never list single files. Then, again with the blank lines, `### <Options>` and three options, numbered with keycap emojis, one line each:
+**Your very next message after the approval is this screen, written out in full: never skip it and never let the box stand in for it; the box follows in the same message.** It has only this on it: a line `---` and the heading `# ⚠️ <Large scope>`; one plain paragraph: the scope is N lines, more than one reviewer can read carefully (about 3000); if it is split it becomes K parts (K from the `SLICES` block) that are reviewed **one at a time, in the order of the table below, the riskiest first**, so the whole run takes about K times as long as a normal one. Then, before the sub-heading a blank line, a line containing only `&nbsp;`, and a blank line, `### 🧩 <Slices>` with a table: one row per slice, in the order of the `SLICES` block (risk rank 1 first), with the columns `#` (its number), `Lines`, `Files` (its file count), `Why it is risky` (a few words), and `Main folders` (folder names only, at most 4, then "+N"). Never list single files. Then, again with the blank lines, `### <Options>` and three options, numbered with keycap emojis, one line each:
 1️⃣ **Slice it** (recommended) — the parts of the table are reviewed one at a time.
 2️⃣ **Narrow the scope** — the user names folders, files or commits (the folders of the table help).
 3️⃣ **One part anyway** — shallower: some parts may be read only superficially or not at all, and the report says which.
 
-Then a **box** with the question, translated: "Which one?", followed in brackets by the part count and the lines of each part from the `SLICES` block (for example "2 parts: 1727 and 1952 lines"), so that the key facts are in the box too. Its three options are the three above, by their bold names (the numbering is for the screen text only). Nothing follows the box.
+The screen looks like this (fill in the `<…>` parts, translated):
+
+```
+---
+
+# ⚠️ <Large scope>
+
+<The scope is N lines, more than one reviewer can read carefully (about 3000). If it is split it becomes K parts that are reviewed one at a time, the riskiest first, so the whole run takes about K times as long as a normal one.>
+
+&nbsp;
+
+### 🧩 <Slices>
+
+| # | <Lines> | <Files> | <Why it is risky> | <Main folders> |
+|---|---|---|---|---|
+| 1 | <n> | <n> | <a few words> | <at most 4 folder names, then "+N"> |
+
+&nbsp;
+
+### <Options>
+
+1️⃣ **<Slice it>** (<recommended>) — <the parts of the table are reviewed one at a time>
+2️⃣ **<Narrow the scope>** — <you name folders, files or commits (the folders of the table help)>
+3️⃣ **<One part anyway>** — <shallower: some parts may be read only superficially or not at all, and the report says which>
+```
+
+Then a **box** with the question, translated: "Which one?", followed in brackets by the part count and the lines of each part from the `SLICES` block (for example "2 parts: 1727 and 1952 lines"), so that the key facts are in the box too. Its three options are the three above, by their bold names (the numbering is for the screen text only). The description of **Slice it** lists the parts, short: for each part its number, lines, files and at most two main folders (for example "1) 2459 lines, 27 files, checks-api, floor-api · 2) 1428 lines, 16 files, tests, infra"), so that the parts are in the box even if the screen is missing. Nothing follows the box.
 
 The reply: **Slice it** → Step 2c. **Narrow the scope** → if the user's own words (typed in "Other") name folders, files or commits, run Step 1 again with the original scope request plus those words and show the new plan; if the choice came without names, ask once in plain text what to narrow to (folders, files or commits), and stop. **One part anyway** → go on with Step 3, not sliced.
 
 ### Step 2c — Depth (only after the user chose slicing)
 
-A screen of its own, without the table (the user has just seen it): a line `---` and the heading `# ⚡ <Depth>`, then three bullets whose names are translated into the user's language (in Turkish: Tam, Öncelikli, Hafif — never leave the English words Full, Priority or Light inside a text in another language): **Full** — every part of the table gets the full review, about N calls; **Priority** — the first parts of the table (the riskiest) get the full review and the rest a quick scan; the cut is the `PRIORITY CUT` the selector suggested, and the user can change it; about N calls; **Light** — every part gets a quick scan (the three core angles, no sweep), about N calls. Take the estimates from the selector. In LIGHT mode say that Light is preselected. Then a **box** with the question, translated: "Which depth?" Three options, always in this order: **Full**, **Priority (the top N parts get the full review)** with N the suggested cut, **Light** — in LIGHT mode Light is marked as the preselected one. A different cut is typed in "Other" (for example "priority 3"). Nothing follows the box.
+**Your very next message after the choice of Step 2b is this screen, written out in full: never skip it and never let the box stand in for it; the box follows in the same message.** It has no table (the user has just seen it): a line `---` and the heading `# ⚡ <Depth>`, then three bullets whose names are translated into the user's language (in Turkish: Tam, Öncelikli, Hafif — never leave the English words Full, Priority or Light inside a text in another language): **Full** — every part of the table gets the full review, about N calls; **Priority** — the first parts of the table (the riskiest) get the full review and the rest a quick scan; the cut is the `PRIORITY CUT` the selector suggested, and the user can change it; about N calls; **Light** — every part gets a quick scan (the three core angles, no sweep), about N calls. Take the estimates from the selector. In LIGHT mode say that Light is preselected. The screen looks like this (fill in the `<…>` parts, translated; in the language of the user the three names are never left in English):
+
+```
+---
+
+# ⚡ <Depth>
+
+- **<Full>** — <every part of the table gets the full review, about N calls>
+- **<Priority>** — <the first parts of the table (the riskiest) get the full review and the rest a quick scan; the cut is N parts and can be changed; about N calls>
+- **<Light>** — <every part gets a quick scan (the three core angles, no sweep), about N calls>
+```
+
+Then a **box** with the question, translated: "Which depth?" Three options, always in this order: **Full**, **Priority (the top N parts get the full review)** with N the suggested cut, **Light** — in LIGHT mode Light is marked as the preselected one. Each option's description says in a few words what it does and its call estimate, so that it is in the box even if the screen is missing. A different cut is typed in "Other" (for example "priority 3"). Nothing follows the box.
 
 The reply is the approval of the run; if it also changes the angles, apply that. A reply that names no depth in LIGHT mode means Light.
 
